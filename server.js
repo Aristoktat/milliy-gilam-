@@ -686,12 +686,12 @@ const seed = async () => {
                 db.run(`INSERT INTO users (username, email, password, profile_pic, bio) VALUES (?,?,?,?,?)`, ['AnvarXO', 'anvar@example.com', hash, 'https://ui-avatars.com/api/?name=Anvar&background=0D8ABC&color=fff', 'Milliy taomlar shaydosiman 🍲']);
                 db.run(`INSERT INTO users (username, email, password, profile_pic, bio) VALUES (?,?,?,?,?)`, ['Malika_Art', 'malika@example.com', hash, 'https://ui-avatars.com/api/?name=Malika&background=EE82EE&color=fff', 'San\'at va sayohat 🎨✈️']);
 
-                db.run(`INSERT INTO posts (user_id, image_url, caption, media_type) VALUES (1, 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c', 'Bugungi palovimiz juda o\'xshabdi! Kelnglar mehmon bo\'ling. #osh #palov #uzbekistan', 'image')`);
-                db.run(`INSERT INTO posts (user_id, image_url, caption, media_type) VALUES (2, 'https://images.unsplash.com/photo-1526772662003-753c2c2f6d0a', 'Samarqandning moviy gumbazlari... Har safar ko\'rganimda hayratlanaman.', 'image')`);
+                db.run(`INSERT INTO posts (user_id, image_url, caption, media_type) VALUES (?, ?, ?, ?)`, [1, 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c', "Bugungi palovimiz juda o'xshabdi! Kelnglar mehmon bo'ling. #osh #palov #uzbekistan", 'image']);
+                db.run(`INSERT INTO posts (user_id, image_url, caption, media_type) VALUES (?, ?, ?, ?)`, [2, 'https://images.unsplash.com/photo-1526772662003-753c2c2f6d0a', "Samarqandning moviy gumbazlari... Har safar ko'rganimda hayratlanaman.", 'image']);
 
                 // Mock Chat Messages
-                db.run(`INSERT INTO messages (sender_id, receiver_id, text) VALUES (2, 1, 'Assalomu alaykum! Palov zo\'r chiqibdi, retseptini berasizmi? 😍')`);
-                db.run(`INSERT INTO messages (sender_id, receiver_id, text) VALUES (1, 2, 'Va alaykum assalom! Albatta, hozir tashlab beraman.')`);
+                db.run(`INSERT INTO messages (sender_id, receiver_id, text) VALUES (?, ?, ?)`, [2, 1, "Assalomu alaykum! Palov zo'r chiqibdi, retseptini berasizmi? 😍"]);
+                db.run(`INSERT INTO messages (sender_id, receiver_id, text) VALUES (?, ?, ?)`, [1, 2, "Va alaykum assalom! Albatta, hozir tashlab beraman."]);
             });
         }
     });
