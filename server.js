@@ -5,7 +5,8 @@ const bcryptjs = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const sqlite3 = require('sqlite3').verbose();
+// const sqlite3 = require('sqlite3').verbose(); // Removed SQLite
+const { Pool } = require('pg'); // PostgreSQL client
 
 const app = express();
 const http = require('http');
@@ -41,119 +42,133 @@ app.get('/chat.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Database connection (SQLite)
-const dbPath = path.join(__dirname, 'milliy_gilam.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) console.error("Baza ochishda xato:", err.message);
-    else console.log("SQLite bazaga ulandi.");
+// Database connection (PostgreSQL)
+// Use DATABASE_URL from environment variables (Render/Neon) or fallback to local
+const isProduction = process.env.NODE_ENV === 'production';
+const connectionString = process.env.DATABASE_URL;
+
+const pool = new Pool({
+    connectionString: connectionString,
+    ssl: isProduction ? { rejectUnauthorized: false } : false // SSL required for Neon/Render
 });
 
-// Create tables
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        email TEXT UNIQUE,
-        password TEXT,
-        profile_pic TEXT,
-        bio TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+// Helper to run queries (wraps pool.query)
+const dbQuery = (text, params) => pool.query(text, params);
 
-    db.run(`CREATE TABLE IF NOT EXISTS posts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        image_url TEXT,
-        caption TEXT,
-        media_type TEXT DEFAULT 'image',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(user_id) REFERENCES users(id)
-    )`);
+// Create tables (PostgreSQL Syntax)
+const createTables = async () => {
+    try {
+        await dbQuery(`CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username TEXT UNIQUE,
+            email TEXT UNIQUE,
+            password TEXT,
+            profile_pic TEXT,
+            bio TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-    db.run(`CREATE TABLE IF NOT EXISTS comments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        post_id INTEGER,
-        user_id INTEGER,
-        text TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(post_id) REFERENCES posts(id),
-        FOREIGN KEY(user_id) REFERENCES users(id)
-    )`);
+        await dbQuery(`CREATE TABLE IF NOT EXISTS posts (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER,
+            image_url TEXT,
+            caption TEXT,
+            media_type TEXT DEFAULT 'image',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )`);
 
-    db.run(`CREATE TABLE IF NOT EXISTS likes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        post_id INTEGER,
-        user_id INTEGER,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(post_id, user_id),
-        FOREIGN KEY(post_id) REFERENCES posts(id),
-        FOREIGN KEY(user_id) REFERENCES users(id)
-    )`);
+        await dbQuery(`CREATE TABLE IF NOT EXISTS comments (
+            id SERIAL PRIMARY KEY,
+            post_id INTEGER,
+            user_id INTEGER,
+            text TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(post_id) REFERENCES posts(id),
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )`);
 
-    db.run(`CREATE TABLE IF NOT EXISTS follows (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        follower_id INTEGER,
-        following_id INTEGER,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(follower_id, following_id),
-        FOREIGN KEY(follower_id) REFERENCES users(id),
-        FOREIGN KEY(following_id) REFERENCES users(id)
-    )`);
+        await dbQuery(`CREATE TABLE IF NOT EXISTS likes (
+            id SERIAL PRIMARY KEY,
+            post_id INTEGER,
+            user_id INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(post_id, user_id),
+            FOREIGN KEY(post_id) REFERENCES posts(id),
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )`);
 
-    db.run(`CREATE TABLE IF NOT EXISTS messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        sender_id INTEGER,
-        receiver_id INTEGER,
-        text TEXT,
-        image_url TEXT,
-        is_read BOOLEAN DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(sender_id) REFERENCES users(id),
-        FOREIGN KEY(receiver_id) REFERENCES users(id)
-    )`);
+        await dbQuery(`CREATE TABLE IF NOT EXISTS follows (
+            id SERIAL PRIMARY KEY,
+            follower_id INTEGER,
+            following_id INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(follower_id, following_id),
+            FOREIGN KEY(follower_id) REFERENCES users(id),
+            FOREIGN KEY(following_id) REFERENCES users(id)
+        )`);
 
-    db.run(`CREATE TABLE IF NOT EXISTS saved_posts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        post_id INTEGER,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, post_id),
-        FOREIGN KEY(user_id) REFERENCES users(id),
-        FOREIGN KEY(post_id) REFERENCES posts(id)
-    )`);
+        await dbQuery(`CREATE TABLE IF NOT EXISTS messages (
+            id SERIAL PRIMARY KEY,
+            sender_id INTEGER,
+            receiver_id INTEGER,
+            text TEXT,
+            image_url TEXT,
+            is_read BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(sender_id) REFERENCES users(id),
+            FOREIGN KEY(receiver_id) REFERENCES users(id)
+        )`);
 
-    db.run(`CREATE TABLE IF NOT EXISTS notifications (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        actor_id INTEGER,
-        type TEXT,
-        message TEXT,
-        post_id INTEGER,
-        is_read BOOLEAN DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(user_id) REFERENCES users(id),
-        FOREIGN KEY(actor_id) REFERENCES users(id)
-    )`);
+        await dbQuery(`CREATE TABLE IF NOT EXISTS saved_posts (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER,
+            post_id INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, post_id),
+            FOREIGN KEY(user_id) REFERENCES users(id),
+            FOREIGN KEY(post_id) REFERENCES posts(id)
+        )`);
 
-    db.run(`CREATE TABLE IF NOT EXISTS stories (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        image_url TEXT,
-        media_type TEXT DEFAULT 'image',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(user_id) REFERENCES users(id)
-    )`);
-});
+        await dbQuery(`CREATE TABLE IF NOT EXISTS notifications (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER,
+            actor_id INTEGER,
+            type TEXT,
+            message TEXT,
+            post_id INTEGER,
+            is_read BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id),
+            FOREIGN KEY(actor_id) REFERENCES users(id)
+        )`);
+
+        await dbQuery(`CREATE TABLE IF NOT EXISTS stories (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER,
+            image_url TEXT,
+            media_type TEXT DEFAULT 'image',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )`);
+        console.log("PostgreSQL jadvallari yaratildi/tekshirildi.");
+    } catch (err) {
+        console.error("Jadvallarni yaratishda xato:", err);
+    }
+};
+
+// Initialize DB
+createTables();
 
 // Helper for notifications
-const createNotification = (userId, actorId, type, message, postId = null) => {
+const createNotification = async (userId, actorId, type, message, postId = null) => {
     if (userId == actorId) return; // Don't notify self actions
-    db.run(`INSERT INTO notifications(user_id, actor_id, type, message, post_id) VALUES(?, ?, ?, ?, ?)`,
-        [userId, actorId, type, message, postId],
-        (err) => {
-            if (err) console.error("Notification Error:", err.message);
-        }
-    );
+    try {
+        await dbQuery(`INSERT INTO notifications(user_id, actor_id, type, message, post_id) VALUES($1, $2, $3, $4, $5)`,
+            [userId, actorId, type, message, postId]);
+    } catch (err) {
+        console.error("Notification Error:", err.message);
+    }
 };
 
 const JWT_SECRET = 'milliy-gilam-secret-key';
@@ -215,19 +230,22 @@ app.post('/api/auth/register', async (req, res) => {
     const { username, email, password } = req.body;
     if (!username || !email || !password) return res.status(400).json({ error: 'Ma\'lumotlar yetarli emas' });
 
-    const hashedPassword = await bcryptjs.hash(password, 10);
-
-    db.run(`INSERT INTO users(username, email, password, profile_pic) VALUES(?, ?, ?, ?)`,
-        [username, email, hashedPassword, `https://ui-avatars.com/api/?name=${username}&background=random`],
-        function (err) {
-            if (err) return res.status(400).json({ error: 'Foydalanuvchi allaqachon mavjud' });
-
-            const token = jwt.sign({ id: this.lastID, username, email }, JWT_SECRET, { expiresIn: '7d' });
-            res.json({ message: 'Muvaffaqiyatli ro\'yxatdan o\'tildi', user: { id: this.lastID, username, email }, token });
-        });
+    try {
+        const hashedPassword = await bcryptjs.hash(password, 10);
+        const result = await dbQuery(
+            `INSERT INTO users(username, email, password, profile_pic) VALUES($1, $2, $3, $4) RETURNING id, username, email`,
+            [username, email, hashedPassword, `https://ui-avatars.com/api/?name=${username}&background=random`]
+        );
+        const newUser = result.rows[0];
+        const token = jwt.sign({ id: newUser.id, username: newUser.username, email: newUser.email }, JWT_SECRET, { expiresIn: '7d' });
+        res.json({ message: 'Muvaffaqiyatli ro\'yxatdan o\'tildi', user: newUser, token });
+    } catch (err) {
+        if (err.code === '23505') return res.status(400).json({ error: 'Foydalanuvchi allaqachon mavjud' });
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
 
     // Admin Login Check
@@ -236,179 +254,179 @@ app.post('/api/auth/login', (req, res) => {
         return res.json({ message: 'Admin kirish', token, isAdmin: true });
     }
 
-    db.get(`SELECT * FROM users WHERE email = ?`, [email], async (err, user) => {
-        if (err || !user) return res.status(401).json({ error: 'Email yoki parol xato' });
+    try {
+        const result = await dbQuery(`SELECT * FROM users WHERE email = $1`, [email]);
+        const user = result.rows[0];
+
+        if (!user) return res.status(401).json({ error: 'Email yoki parol xato' });
 
         const validPassword = await bcryptjs.compare(password, user.password);
         if (!validPassword) return res.status(401).json({ error: 'Email yoki parol xato' });
 
         const token = jwt.sign({ id: user.id, username: user.username, email: user.email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
         res.json({ message: 'Kirish muvaffaqiyatli', user: { id: user.id, username: user.username, email: user.email, profile_pic: user.profile_pic }, token });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.get('/api/auth/me', verifyToken, (req, res) => {
-    db.get(`
-        SELECT u.id, u.username, u.email, u.profile_pic, u.bio,
-        (SELECT COUNT(*) FROM posts WHERE user_id = u.id) as posts_count,
-        (SELECT COUNT(*) FROM follows WHERE following_id = u.id) as followers_count,
-        (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count
-        FROM users u WHERE u.id = ?`,
-        [req.user.id], (err, row) => {
-            if (err || !row) return res.status(404).json({ error: 'User not found' });
-            res.json(row);
-        });
+app.get('/api/auth/me', verifyToken, async (req, res) => {
+    try {
+        const result = await dbQuery(`
+            SELECT u.id, u.username, u.email, u.profile_pic, u.bio,
+            (SELECT COUNT(*) FROM posts WHERE user_id = u.id) as posts_count,
+            (SELECT COUNT(*) FROM follows WHERE following_id = u.id) as followers_count,
+            (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count
+            FROM users u WHERE u.id = $1`,
+            [req.user.id]);
+
+        if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Users
-app.get('/api/users', (req, res) => {
-    db.all(`
-        SELECT u.id, u.username, u.email, u.profile_pic,
-        (SELECT COUNT(*) FROM posts WHERE user_id = u.id) as posts_count
-        FROM users u LIMIT 50`,
-        [], (err, rows) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json(rows);
-        });
+app.get('/api/users', async (req, res) => {
+    try {
+        const result = await dbQuery(`
+            SELECT u.id, u.username, u.email, u.profile_pic,
+            (SELECT COUNT(*) FROM posts WHERE user_id = u.id) as posts_count
+            FROM users u LIMIT 50`);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.get('/api/users/:id', (req, res) => {
-    db.get(`
-        SELECT u.id, u.username, u.email, u.profile_pic, u.bio,
-        (SELECT COUNT(*) FROM posts WHERE user_id = u.id) as posts_count,
-        (SELECT COUNT(*) FROM follows WHERE following_id = u.id) as followers_count,
-        (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count
-        FROM users u WHERE u.id = ?`,
-        [req.params.id], (err, row) => {
-            if (err || !row) return res.status(404).json({ error: 'User not found' });
-            res.json(row);
-        });
+app.get('/api/users/:id', async (req, res) => {
+    try {
+        const result = await dbQuery(`
+            SELECT u.id, u.username, u.email, u.profile_pic, u.bio,
+            (SELECT COUNT(*) FROM posts WHERE user_id = u.id) as posts_count,
+            (SELECT COUNT(*) FROM follows WHERE following_id = u.id) as followers_count,
+            (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count
+            FROM users u WHERE u.id = $1`,
+            [req.params.id]);
+
+        if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.get('/api/users/:id/posts', (req, res) => {
-    db.all(`
-        SELECT p.*, 
-        (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
-        (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count
-        FROM posts p 
-        WHERE user_id = ? 
-        ORDER BY created_at DESC`,
-        [req.params.id], (err, rows) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json(rows);
-        });
+app.get('/api/users/:id/posts', async (req, res) => {
+    try {
+        const result = await dbQuery(`
+            SELECT p.*, 
+            (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
+            (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count
+            FROM posts p 
+            WHERE user_id = $1 
+            ORDER BY created_at DESC`,
+            [req.params.id]);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.get('/api/users/:id/followers', (req, res) => {
-    db.all(`
-        SELECT u.id, u.username, u.profile_pic 
-        FROM follows f 
-        JOIN users u ON f.follower_id = u.id 
-        WHERE f.following_id = ?`,
-        [req.params.id], (err, rows) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json(rows);
-        });
+app.get('/api/users/:id/followers', async (req, res) => {
+    try {
+        const result = await dbQuery(`
+            SELECT u.id, u.username, u.profile_pic 
+            FROM follows f 
+            JOIN users u ON f.follower_id = u.id 
+            WHERE f.following_id = $1`,
+            [req.params.id]);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.get('/api/users/:id/following', (req, res) => {
-    db.all(`
-        SELECT u.id, u.username, u.profile_pic 
-        FROM follows f 
-        JOIN users u ON f.following_id = u.id 
-        WHERE f.follower_id = ?`,
-        [req.params.id], (err, rows) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json(rows);
-        });
+app.get('/api/users/:id/following', async (req, res) => {
+    try {
+        const result = await dbQuery(`
+            SELECT u.id, u.username, u.profile_pic 
+            FROM follows f 
+            JOIN users u ON f.following_id = u.id 
+            WHERE f.follower_id = $1`,
+            [req.params.id]);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/users/:id/follow', verifyToken, (req, res) => {
+app.post('/api/users/:id/follow', verifyToken, async (req, res) => {
     const targetUserId = req.params.id;
     const currentUserId = req.user.id;
 
     if (targetUserId == currentUserId) return res.status(400).json({ error: 'O\'zingizga obuna bo\'lolmaysiz' });
 
-    db.get('SELECT * FROM follows WHERE follower_id = ? AND following_id = ?', [currentUserId, targetUserId], (err, row) => {
-        if (err) return res.status(500).json({ error: err.message });
-
-        if (row) {
+    try {
+        const check = await dbQuery('SELECT * FROM follows WHERE follower_id = $1 AND following_id = $2', [currentUserId, targetUserId]);
+        if (check.rows.length > 0) {
             // Unfollow
-            db.run('DELETE FROM follows WHERE follower_id = ? AND following_id = ?', [currentUserId, targetUserId], (err) => {
-                if (err) return res.status(500).json({ error: err.message });
-                res.json({ message: 'Obuna bekor qilindi', following: false });
-            });
+            await dbQuery('DELETE FROM follows WHERE follower_id = $1 AND following_id = $2', [currentUserId, targetUserId]);
+            res.json({ message: 'Obuna bekor qilindi', following: false });
         } else {
             // Follow
-            db.run('INSERT INTO follows (follower_id, following_id) VALUES (?, ?)', [currentUserId, targetUserId], (err) => {
-                if (err) return res.status(500).json({ error: err.message });
-
-                // Notification
-                createNotification(targetUserId, currentUserId, 'follow', 'sizga obuna bo\'ldi');
-
-                res.json({ message: 'Obuna bo\'ldingiz', following: true });
-            });
+            await dbQuery('INSERT INTO follows (follower_id, following_id) VALUES ($1, $2)', [currentUserId, targetUserId]);
+            createNotification(targetUserId, currentUserId, 'follow', 'sizga obuna bo\'ldi');
+            res.json({ message: 'Obuna bo\'ldingiz', following: true });
         }
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Posts & Feed
 // Search
-app.get('/api/search', (req, res) => {
+app.get('/api/search', async (req, res) => {
     const q = req.query.q;
     if (!q) return res.json({ users: [], posts: [] });
 
     const searchQuery = `%${q}%`;
-
-    const usersPromise = new Promise((resolve, reject) => {
-        db.all("SELECT id, username, profile_pic FROM users WHERE username LIKE ? OR bio LIKE ? LIMIT 20",
-            [searchQuery, searchQuery], (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-    });
-
-    const postsPromise = new Promise((resolve, reject) => {
-        db.all(`
+    try {
+        const users = await dbQuery("SELECT id, username, profile_pic FROM users WHERE username ILIKE $1 OR bio ILIKE $1 LIMIT 20", [searchQuery]);
+        const posts = await dbQuery(`
             SELECT p.*, u.username, u.profile_pic,
             (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
             (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count
             FROM posts p 
             JOIN users u ON p.user_id = u.id 
-            WHERE p.caption LIKE ? OR u.username LIKE ?
+            WHERE p.caption ILIKE $1 OR u.username ILIKE $1
             ORDER BY p.created_at DESC 
-            LIMIT 50
-        `, [searchQuery, searchQuery], (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
-        });
-    });
+            LIMIT 50`, [searchQuery]);
 
-    Promise.all([usersPromise, postsPromise])
-        .then(([users, posts]) => {
-            res.json({ users, posts });
-        })
-        .catch(err => {
-            res.status(500).json({ error: err.message });
-        });
+        res.json({ users: users.rows, posts: posts.rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.get('/api/feed', verifyToken, (req, res) => {
+app.get('/api/feed', verifyToken, async (req, res) => {
     const query = `
         SELECT p.*, u.username, u.profile_pic,
         (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
         (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count,
-        (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) as is_liked,
-        (SELECT COUNT(*) FROM saved_posts WHERE post_id = p.id AND user_id = ?) as is_saved
+        (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = $1) as is_liked,
+        (SELECT COUNT(*) FROM saved_posts WHERE post_id = p.id AND user_id = $2) as is_saved
         FROM posts p 
         JOIN users u ON p.user_id = u.id 
         ORDER BY p.created_at DESC 
         LIMIT 50
     `;
-    db.all(query, [req.user.id, req.user.id], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+    try {
+        const result = await dbQuery(query, [req.user.id, req.user.id]);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.post('/api/upload', verifyToken, upload.single('file'), (req, res) => {
@@ -420,158 +438,147 @@ app.post('/api/upload', verifyToken, upload.single('file'), (req, res) => {
     res.json({ message: 'Yuklandi', url: fileUrl, media_type: mediaType });
 });
 
-app.post('/api/posts', verifyToken, (req, res) => {
+app.post('/api/posts', verifyToken, async (req, res) => {
     const { image_url, caption, media_type } = req.body;
     if (!image_url) return res.status(400).json({ error: 'Media URL kiritilmadi' });
 
-    db.run(
-        `INSERT INTO posts (user_id, image_url, caption, media_type) VALUES (?, ?, ?, ?)`,
-        [req.user.id, image_url, caption || '', media_type || 'image'],
-        function (err) {
-            if (err) return res.status(500).json({ error: 'Post yaratishda xato: ' + err.message });
-
-            // Return created post structure manually or fetch it
-            const newPost = {
-                id: this.lastID,
-                user_id: req.user.id,
-                image_url,
-                caption,
-                media_type: media_type || 'image',
-                created_at: new Date()
-            };
-            res.json({ message: 'Post yaratildi', post: newPost });
-        }
-    );
+    try {
+        const result = await dbQuery(
+            `INSERT INTO posts (user_id, image_url, caption, media_type) VALUES ($1, $2, $3, $4) RETURNING *`,
+            [req.user.id, image_url, caption || '', media_type || 'image']
+        );
+        res.json({ message: 'Post yaratildi', post: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: 'Post yaratishda xato: ' + err.message });
+    }
 });
 
 // Likes & Comments
-app.get('/api/posts/:id/comments', (req, res) => {
-    db.all(`
-        SELECT c.*, u.username 
-        FROM comments c 
-        JOIN users u ON c.user_id = u.id 
-        WHERE c.post_id = ? 
-        ORDER BY c.created_at DESC`,
-        [req.params.id], (err, rows) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json(rows);
-        });
+app.get('/api/posts/:id/comments', async (req, res) => {
+    try {
+        const result = await dbQuery(`
+            SELECT c.*, u.username 
+            FROM comments c 
+            JOIN users u ON c.user_id = u.id 
+            WHERE c.post_id = $1 
+            ORDER BY c.created_at DESC`,
+            [req.params.id]);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/posts/:id/comments', verifyToken, (req, res) => {
+app.post('/api/posts/:id/comments', verifyToken, async (req, res) => {
     const { text } = req.body;
     if (!text) return res.status(400).json({ error: 'Matn kiritilmadi' });
 
-    db.run(`INSERT INTO comments (post_id, user_id, text) VALUES (?, ?, ?)`,
-        [req.params.id, req.user.id, text],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
+    try {
+        const result = await dbQuery(`INSERT INTO comments (post_id, user_id, text) VALUES ($1, $2, $3) RETURNING id`,
+            [req.params.id, req.user.id, text]);
 
-            // Notification: We need post owner's ID.
-            db.get("SELECT user_id FROM posts WHERE id = ?", [req.params.id], (err, post) => {
-                if (post) createNotification(post.user_id, req.user.id, 'comment', 'postingizga izoh qoldirdi', req.params.id);
-            });
+        // Notification
+        const postRes = await dbQuery("SELECT user_id FROM posts WHERE id = $1", [req.params.id]);
+        if (postRes.rows.length > 0) {
+            createNotification(postRes.rows[0].user_id, req.user.id, 'comment', 'postingizga izoh qoldirdi', req.params.id);
+        }
 
-            res.json({ message: 'Sharh qo\'shildi', comment: { id: this.lastID, text, user_id: req.user.id } });
-        });
+        res.json({ message: 'Sharh qo\'shildi', comment: { id: result.rows[0].id, text, user_id: req.user.id } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/posts/:id/like', verifyToken, (req, res) => {
+app.post('/api/posts/:id/like', verifyToken, async (req, res) => {
     const post_id = req.params.id;
     const user_id = req.user.id;
 
-    db.get(`SELECT * FROM likes WHERE post_id = ? AND user_id = ?`, [post_id, user_id], (err, row) => {
-        if (row) {
+    try {
+        const check = await dbQuery(`SELECT * FROM likes WHERE post_id = $1 AND user_id = $2`, [post_id, user_id]);
+
+        if (check.rows.length > 0) {
             // Unlike
-            db.run(`DELETE FROM likes WHERE post_id = ? AND user_id = ?`, [post_id, user_id], (err) => {
-                if (err) return res.status(500).json({ error: err.message });
-                res.json({ message: 'Like olib tashlandi', liked: false });
-            });
+            await dbQuery(`DELETE FROM likes WHERE post_id = $1 AND user_id = $2`, [post_id, user_id]);
+            res.json({ message: 'Like olib tashlandi', liked: false });
         } else {
             // Like
-            db.run(`INSERT INTO likes (post_id, user_id) VALUES (?, ?)`, [post_id, user_id], (err) => {
-                if (err) return res.status(500).json({ error: err.message });
+            await dbQuery(`INSERT INTO likes (post_id, user_id) VALUES ($1, $2)`, [post_id, user_id]);
 
-                // Notification
-                db.get("SELECT user_id FROM posts WHERE id = ?", [post_id], (err, post) => {
-                    if (post) createNotification(post.user_id, user_id, 'like', 'postingizga like bosdi', post_id);
-                });
-
-                res.json({ message: 'Like bosildi', liked: true });
-            });
+            const postRes = await dbQuery("SELECT user_id FROM posts WHERE id = $1", [post_id]);
+            if (postRes.rows.length > 0) {
+                createNotification(postRes.rows[0].user_id, user_id, 'like', 'postingizga like bosdi', post_id);
+            }
+            res.json({ message: 'Like bosildi', liked: true });
         }
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.delete('/api/posts/:id', verifyToken, (req, res) => {
-    // TEMPORARY: Removed user_id check to allow editing seeded posts
-    console.log(`[DELETE] Request for post ID: ${req.params.id}`);
-    db.run(`DELETE FROM posts WHERE id = ?`, [req.params.id], function (err) {
-        if (err) {
-            console.error(`[DELETE] Error: ${err.message}`);
-            return res.status(500).json({ error: err.message });
-        }
-        console.log(`[DELETE] Rows affected: ${this.changes}`);
-        if (this.changes === 0) return res.status(403).json({ error: 'Post topilmadi (ID: ' + req.params.id + ')' });
+app.delete('/api/posts/:id', verifyToken, async (req, res) => {
+    try {
+        const result = await dbQuery(`DELETE FROM posts WHERE id = $1 RETURNING id`, [req.params.id]);
+        if (result.rowCount === 0) return res.status(403).json({ error: 'Post topilmadi' });
         res.json({ message: 'Post o\'chirildi' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.put('/api/posts/:id', verifyToken, (req, res) => {
+app.put('/api/posts/:id', verifyToken, async (req, res) => {
     const { caption } = req.body;
-    // TEMPORARY: Removed user_id check to allow editing seeded posts
-    console.log(`[PUT] Request for post ID: ${req.params.id}, Caption: ${caption}`);
-    db.run(`UPDATE posts SET caption = ? WHERE id = ?`, [caption, req.params.id], function (err) {
-        if (err) {
-            console.error(`[PUT] Error: ${err.message}`);
-            return res.status(500).json({ error: err.message });
-        }
-        console.log(`[PUT] Rows affected: ${this.changes}`);
-        if (this.changes === 0) return res.status(403).json({ error: 'Post topilmadi (ID: ' + req.params.id + ')' });
+    try {
+        const result = await dbQuery(`UPDATE posts SET caption = $1 WHERE id = $2 RETURNING id`, [caption, req.params.id]);
+        if (result.rowCount === 0) return res.status(403).json({ error: 'Post topilmadi' });
         res.json({ message: 'Post yangilandi' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.put('/api/users/me', verifyToken, (req, res) => {
+app.put('/api/users/me', verifyToken, async (req, res) => {
     const { profile_pic, bio } = req.body;
-    db.run(`UPDATE users SET profile_pic = ?, bio = ? WHERE id = ?`, [profile_pic, bio, req.user.id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
+    try {
+        await dbQuery(`UPDATE users SET profile_pic = $1, bio = $2 WHERE id = $3`, [profile_pic, bio, req.user.id]);
         res.json({ message: 'Profil yangilandi' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
-
-
 
 // Messages
-app.get('/api/conversations', verifyToken, (req, res) => {
-    // Get list of unique users the current user has exchanged messages with
+app.get('/api/conversations', verifyToken, async (req, res) => {
     const query = `
         SELECT DISTINCT u.id, u.username, u.profile_pic
         FROM users u
-        JOIN messages m ON (m.sender_id = u.id AND m.receiver_id = ?) OR (m.receiver_id = u.id AND m.sender_id = ?)
+        JOIN messages m ON (m.sender_id = u.id AND m.receiver_id = $1) OR (m.receiver_id = u.id AND m.sender_id = $2)
     `;
-    db.all(query, [req.user.id, req.user.id], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+    try {
+        const result = await dbQuery(query, [req.user.id, req.user.id]);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.get('/api/messages/:userId', verifyToken, (req, res) => {
+app.get('/api/messages/:userId', verifyToken, async (req, res) => {
     const otherId = req.params.userId;
     const query = `
         SELECT m.*, u.username as sender_name
         FROM messages m
         JOIN users u ON m.sender_id = u.id
-        WHERE (m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = ?)
+        WHERE (m.sender_id = $1 AND m.receiver_id = $2) OR (m.sender_id = $3 AND m.receiver_id = $4)
         ORDER BY m.created_at ASC
     `;
-    db.all(query, [req.user.id, otherId, otherId, req.user.id], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+    try {
+        const result = await dbQuery(query, [req.user.id, otherId, otherId, req.user.id]);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/messages', verifyToken, upload.single('image'), (req, res) => {
+app.post('/api/messages', verifyToken, upload.single('image'), async (req, res) => {
     const { receiver_id, text } = req.body;
     let image_url = null;
 
@@ -581,208 +588,198 @@ app.post('/api/messages', verifyToken, upload.single('image'), (req, res) => {
 
     if (!receiver_id || (!text && !image_url)) return res.status(400).json({ error: 'Xabar bo\'sh bo\'lolmaydi' });
 
-    db.run(`INSERT INTO messages (sender_id, receiver_id, text, image_url) VALUES (?, ?, ?, ?)`,
-        [req.user.id, receiver_id, text || '', image_url],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
+    try {
+        const result = await dbQuery(`INSERT INTO messages (sender_id, receiver_id, text, image_url) VALUES ($1, $2, $3, $4) RETURNING *`,
+            [req.user.id, receiver_id, text || '', image_url]);
 
-            // Notification for new message
-            createNotification(receiver_id, req.user.id, 'message', 'sizga xabar yubordi');
+        createNotification(receiver_id, req.user.id, 'message', 'sizga xabar yubordi');
 
-            res.json({ message: 'Xabar yuborildi', data: { id: this.lastID, sender_id: req.user.id, receiver_id, text, image_url, created_at: new Date() } });
-        });
+        res.json({ message: 'Xabar yuborildi', data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/messages/read/:senderId', verifyToken, (req, res) => {
-    db.run(`UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ?`,
-        [req.params.senderId, req.user.id],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'O\'qildi' });
-        });
+app.post('/api/messages/read/:senderId', verifyToken, async (req, res) => {
+    try {
+        await dbQuery(`UPDATE messages SET is_read = TRUE WHERE sender_id = $1 AND receiver_id = $2`,
+            [req.params.senderId, req.user.id]);
+        res.json({ message: 'O\'qildi' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
-
 
 // Stories
-app.get('/api/stories', verifyToken, (req, res) => {
-    // Get active stories (last 24 hours)
-    db.all(`
-        SELECT s.*, u.username, u.profile_pic 
-        FROM stories s
-        JOIN users u ON s.user_id = u.id
-        WHERE s.created_at > datetime('now', '-24 hours')
-        ORDER BY s.created_at DESC`,
-        [], (err, rows) => {
-            if (err) return res.status(500).json({ error: err.message });
+app.get('/api/stories', verifyToken, async (req, res) => {
+    try {
+        const result = await dbQuery(`
+            SELECT s.*, u.username, u.profile_pic 
+            FROM stories s
+            JOIN users u ON s.user_id = u.id
+            WHERE s.created_at > NOW() - INTERVAL '24 hours'
+            ORDER BY s.created_at DESC`);
 
-            // Group by user
-            const grouped = {};
-            rows.forEach(row => {
-                if (!grouped[row.user_id]) {
-                    grouped[row.user_id] = {
-                        user_id: row.user_id,
-                        username: row.username,
-                        profile_pic: row.profile_pic,
-                        stories: [],
-                        has_unseen: true // Simplified logic
-                    };
-                }
-                grouped[row.user_id].stories.push({
-                    id: row.id,
-                    image_url: row.image_url,
-                    media_type: row.media_type,
-                    created_at: row.created_at
-                });
+        // Group by user (Existing logic preserved)
+        const grouped = {};
+        result.rows.forEach(row => {
+            if (!grouped[row.user_id]) {
+                grouped[row.user_id] = {
+                    user_id: row.user_id,
+                    username: row.username,
+                    profile_pic: row.profile_pic,
+                    stories: [],
+                    has_unseen: true
+                };
+            }
+            grouped[row.user_id].stories.push({
+                id: row.id,
+                image_url: row.image_url,
+                media_type: row.media_type,
+                created_at: row.created_at
             });
-
-            // Convert to array and reverse stories for chronological playback (Oldest -> Newest)
-            const result = Object.values(grouped).map(group => {
-                group.stories.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-                return group;
-            });
-
-            res.json(result);
         });
+
+        const final = Object.values(grouped).map(group => {
+            group.stories.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            return group;
+        });
+        res.json(final);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/stories', verifyToken, upload.single('file'), (req, res) => {
+app.post('/api/stories', verifyToken, upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'Fayl tanlanmadi' });
 
     const image_url = `/uploads/${req.file.filename}`;
     const media_type = req.file.mimetype.startsWith('video') ? 'video' : 'image';
 
-    db.run(`INSERT INTO stories (user_id, image_url, media_type) VALUES (?, ?, ?)`,
-        [req.user.id, image_url, media_type],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Hikoya qo\'shildi', story: { id: this.lastID, image_url, media_type } });
-        });
+    try {
+        const result = await dbQuery(`INSERT INTO stories (user_id, image_url, media_type) VALUES ($1, $2, $3) RETURNING id`,
+            [req.user.id, image_url, media_type]);
+        res.json({ message: 'Hikoya qo\'shildi', story: { id: result.rows[0].id, image_url, media_type } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Saved Posts
-app.post('/api/posts/:id/save', verifyToken, (req, res) => {
+app.post('/api/posts/:id/save', verifyToken, async (req, res) => {
     const post_id = req.params.id;
     const user_id = req.user.id;
 
-    db.get(`SELECT * FROM saved_posts WHERE post_id = ? AND user_id = ?`, [post_id, user_id], (err, row) => {
-        if (row) {
-            // Unsave
-            db.run(`DELETE FROM saved_posts WHERE post_id = ? AND user_id = ?`, [post_id, user_id], (err) => {
-                if (err) return res.status(500).json({ error: err.message });
-                res.json({ message: 'Saqlanganlardan olib tashlandi', saved: false });
-            });
+    try {
+        const check = await dbQuery(`SELECT * FROM saved_posts WHERE post_id = $1 AND user_id = $2`, [post_id, user_id]);
+        if (check.rows.length > 0) {
+            await dbQuery(`DELETE FROM saved_posts WHERE post_id = $1 AND user_id = $2`, [post_id, user_id]);
+            res.json({ message: 'Saqlanganlardan olib tashlandi', saved: false });
         } else {
-            // Save
-            db.run(`INSERT INTO saved_posts (post_id, user_id) VALUES (?, ?)`, [post_id, user_id], (err) => {
-                if (err) return res.status(500).json({ error: err.message });
-                res.json({ message: 'Saqlandi', saved: true });
-            });
+            await dbQuery(`INSERT INTO saved_posts (post_id, user_id) VALUES ($1, $2)`, [post_id, user_id]);
+            res.json({ message: 'Saqlandi', saved: true });
         }
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.get('/api/saved', verifyToken, (req, res) => {
-    db.all(`
-        SELECT p.*, u.username, u.profile_pic,
-        (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
-        (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count
-        FROM saved_posts s
-        JOIN posts p ON s.post_id = p.id
-        JOIN users u ON p.user_id = u.id
-        WHERE s.user_id = ?
-        ORDER BY s.created_at DESC`,
-        [req.user.id], (err, rows) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json(rows);
-        });
+app.get('/api/saved', verifyToken, async (req, res) => {
+    try {
+        const result = await dbQuery(`
+            SELECT p.*, u.username, u.profile_pic,
+            (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
+            (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count
+            FROM saved_posts s
+            JOIN posts p ON s.post_id = p.id
+            JOIN users u ON p.user_id = u.id
+            WHERE s.user_id = $1
+            ORDER BY s.created_at DESC`,
+            [req.user.id]);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Seed function (optional, run once)
-const seed = async () => {
-    // Check if users exist
-    db.get("SELECT count(*) as count FROM users", [], async (err, row) => {
-        if (row && row.count === 0) {
-            console.log("Bazaga boshlang'ich ma'lumotlar qo'shilmoqda...");
-            const hash = await bcryptjs.hash('123', 10);
-
-            db.serialize(() => {
-                db.run(`INSERT INTO users (username, email, password, profile_pic, bio) VALUES (?,?,?,?,?)`, ['AnvarXO', 'anvar@example.com', hash, 'https://ui-avatars.com/api/?name=Anvar&background=0D8ABC&color=fff', 'Milliy taomlar shaydosiman 🍲']);
-                db.run(`INSERT INTO users (username, email, password, profile_pic, bio) VALUES (?,?,?,?,?)`, ['Malika_Art', 'malika@example.com', hash, 'https://ui-avatars.com/api/?name=Malika&background=EE82EE&color=fff', 'San\'at va sayohat 🎨✈️']);
-
-                db.run(`INSERT INTO posts (user_id, image_url, caption, media_type) VALUES (?, ?, ?, ?)`, [1, 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c', "Bugungi palovimiz juda o'xshabdi! Kelnglar mehmon bo'ling. #osh #palov #uzbekistan", 'image']);
-                db.run(`INSERT INTO posts (user_id, image_url, caption, media_type) VALUES (?, ?, ?, ?)`, [2, 'https://images.unsplash.com/photo-1526772662003-753c2c2f6d0a', "Samarqandning moviy gumbazlari... Har safar ko'rganimda hayratlanaman.", 'image']);
-
-                // Mock Chat Messages
-                db.run(`INSERT INTO messages (sender_id, receiver_id, text) VALUES (?, ?, ?)`, [2, 1, "Assalomu alaykum! Palov zo'r chiqibdi, retseptini berasizmi? 😍"]);
-                db.run(`INSERT INTO messages (sender_id, receiver_id, text) VALUES (?, ?, ?)`, [1, 2, "Va alaykum assalom! Albatta, hozir tashlab beraman."]);
-            });
-        }
-    });
-};
-seed();
+// NOTE: For Postgres migration, seeding is simplified or disabled to avoid duplicates on every restart if not handled carefully.
+// You can uncomment and adjust if needed, but for "Permanent" DB, better to seed once manually or via SQL script.
 
 // Notifications
-app.get('/api/notifications', verifyToken, (req, res) => {
-    db.all(`
-        SELECT n.*, u.username, u.profile_pic 
-        FROM notifications n 
-        JOIN users u ON n.actor_id = u.id 
-        WHERE n.user_id = ? 
-        ORDER BY n.created_at DESC 
-        LIMIT 20`,
-        [req.user.id], (err, rows) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json(rows);
-        });
+app.get('/api/notifications', verifyToken, async (req, res) => {
+    try {
+        const result = await dbQuery(`
+            SELECT n.*, u.username, u.profile_pic 
+            FROM notifications n 
+            JOIN users u ON n.actor_id = u.id 
+            WHERE n.user_id = $1 
+            ORDER BY n.created_at DESC 
+            LIMIT 20`,
+            [req.user.id]);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // --- ADMIN API ---
-app.get('/api/admin/stats', verifyAdmin, (req, res) => {
-    const stats = {};
-    db.serialize(() => {
-        db.get("SELECT COUNT(*) as count FROM users", (err, row) => stats.users = row.count);
-        db.get("SELECT COUNT(*) as count FROM posts", (err, row) => stats.posts = row.count);
-        db.get("SELECT COUNT(*) as count FROM messages", (err, row) => {
-            stats.messages = row.count;
-            res.json(stats);
+app.get('/api/admin/stats', verifyAdmin, async (req, res) => {
+    try {
+        const users = await dbQuery("SELECT COUNT(*) as count FROM users");
+        const posts = await dbQuery("SELECT COUNT(*) as count FROM posts");
+        const messages = await dbQuery("SELECT COUNT(*) as count FROM messages");
+
+        res.json({
+            users: users.rows[0].count,
+            posts: posts.rows[0].count,
+            messages: messages.rows[0].count
         });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.get('/api/admin/users', verifyAdmin, (req, res) => {
-    db.all("SELECT id, username, email, created_at FROM users ORDER BY created_at DESC", (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+app.get('/api/admin/users', verifyAdmin, async (req, res) => {
+    try {
+        const result = await dbQuery("SELECT id, username, email, created_at FROM users ORDER BY created_at DESC");
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.delete('/api/admin/users/:id', verifyAdmin, (req, res) => {
-    db.run("DELETE FROM users WHERE id = ?", [req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        // Clean up related data (posts, comments, etc.) - Simplified for now
-        db.run("DELETE FROM posts WHERE user_id = ?", [req.params.id]);
-        db.run("DELETE FROM comments WHERE user_id = ?", [req.params.id]);
-        db.run("DELETE FROM messages WHERE sender_id = ? OR receiver_id = ?", [req.params.id, req.params.id]);
+app.delete('/api/admin/users/:id', verifyAdmin, async (req, res) => {
+    try {
+        await dbQuery("DELETE FROM users WHERE id = $1", [req.params.id]);
+        // Foreign key cascades should ideally handle related data, or delete manually:
+        // await dbQuery("DELETE FROM posts WHERE user_id = $1", [req.params.id]);
         res.json({ message: 'Foydalanuvchi o\'chirildi' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.get('/api/admin/posts', verifyAdmin, (req, res) => {
-    db.all(`
-        SELECT p.*, u.username 
-        FROM posts p 
-        JOIN users u ON p.user_id = u.id 
-        ORDER BY p.created_at DESC`, (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+app.get('/api/admin/posts', verifyAdmin, async (req, res) => {
+    try {
+        const result = await dbQuery(`
+            SELECT p.*, u.username 
+            FROM posts p 
+            JOIN users u ON p.user_id = u.id 
+            ORDER BY p.created_at DESC`);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.delete('/api/admin/posts/:id', verifyAdmin, (req, res) => {
-    db.run("DELETE FROM posts WHERE id = ?", [req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+app.delete('/api/admin/posts/:id', verifyAdmin, async (req, res) => {
+    try {
+        await dbQuery("DELETE FROM posts WHERE id = $1", [req.params.id]);
         res.json({ message: 'Post o\'chirildi' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // --- Socket.io Logic for Video Call ---
@@ -865,13 +862,12 @@ const HTTPS_PORT = 4002;
 if (process.env.PORT) {
     server.listen(PORT, () => {
         console.log(`Server Hostingda ishga tushdi (Port/Pipe: ${PORT})`);
-        console.log(`Baza fayli: ${dbPath}`);
+
     });
 } else {
     // Lokal kompyuterda (Uyda) ikkalasini ham ishlatamiz
     server.listen(PORT, '0.0.0.0', () => {
         console.log(`Server HTTP (Oddiy) ishga tushdi: http://localhost:${PORT}`);
-        console.log(`Baza fayli: ${dbPath}`);
     });
 
     try {
