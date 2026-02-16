@@ -49,7 +49,7 @@ const connectionString = process.env.DATABASE_URL;
 
 const pool = new Pool({
     connectionString: connectionString,
-    ssl: isProduction ? { rejectUnauthorized: false } : false // SSL required for Neon/Render
+    ssl: { rejectUnauthorized: false } // Force SSL for Render Postgres
 });
 
 // Helper to run queries (wraps pool.query)
