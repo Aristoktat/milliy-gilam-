@@ -157,6 +157,8 @@ const createNotification = (userId, actorId, type, message, postId = null) => {
 };
 
 const JWT_SECRET = 'milliy-gilam-secret-key';
+const ADMIN_PASSWORD = 'admin'; // Oddiy parol (o'zgartirishingiz mumkin)
+
 
 // Multer setup
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -192,6 +194,20 @@ const verifyToken = (req, res, next) => {
     }
 };
 
+// Admin Middleware
+const verifyAdmin = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Token required' });
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded.role !== 'admin') return res.status(403).json({ error: 'Access denied' });
+        req.user = decoded;
+        next();
+    } catch (err) {
+        res.status(401).json({ error: 'Invalid token' });
+    }
+};
+
 // --- ROUTES ---
 
 // Auth
@@ -213,13 +229,20 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', (req, res) => {
     const { email, password } = req.body;
+
+    // Admin Login Check
+    if (email === 'admin' && password === ADMIN_PASSWORD) {
+        const token = jwt.sign({ id: 0, username: 'Admin', role: 'admin' }, JWT_SECRET, { expiresIn: '1h' });
+        return res.json({ message: 'Admin kirish', token, isAdmin: true });
+    }
+
     db.get(`SELECT * FROM users WHERE email = ?`, [email], async (err, user) => {
         if (err || !user) return res.status(401).json({ error: 'Email yoki parol xato' });
 
         const validPassword = await bcryptjs.compare(password, user.password);
         if (!validPassword) return res.status(401).json({ error: 'Email yoki parol xato' });
 
-        const token = jwt.sign({ id: user.id, username: user.username, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ id: user.id, username: user.username, email: user.email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
         res.json({ message: 'Kirish muvaffaqiyatli', user: { id: user.id, username: user.username, email: user.email, profile_pic: user.profile_pic }, token });
     });
 });
@@ -711,6 +734,55 @@ app.get('/api/notifications', verifyToken, (req, res) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json(rows);
         });
+});
+
+// --- ADMIN API ---
+app.get('/api/admin/stats', verifyAdmin, (req, res) => {
+    const stats = {};
+    db.serialize(() => {
+        db.get("SELECT COUNT(*) as count FROM users", (err, row) => stats.users = row.count);
+        db.get("SELECT COUNT(*) as count FROM posts", (err, row) => stats.posts = row.count);
+        db.get("SELECT COUNT(*) as count FROM messages", (err, row) => {
+            stats.messages = row.count;
+            res.json(stats);
+        });
+    });
+});
+
+app.get('/api/admin/users', verifyAdmin, (req, res) => {
+    db.all("SELECT id, username, email, created_at FROM users ORDER BY created_at DESC", (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+app.delete('/api/admin/users/:id', verifyAdmin, (req, res) => {
+    db.run("DELETE FROM users WHERE id = ?", [req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        // Clean up related data (posts, comments, etc.) - Simplified for now
+        db.run("DELETE FROM posts WHERE user_id = ?", [req.params.id]);
+        db.run("DELETE FROM comments WHERE user_id = ?", [req.params.id]);
+        db.run("DELETE FROM messages WHERE sender_id = ? OR receiver_id = ?", [req.params.id, req.params.id]);
+        res.json({ message: 'Foydalanuvchi o\'chirildi' });
+    });
+});
+
+app.get('/api/admin/posts', verifyAdmin, (req, res) => {
+    db.all(`
+        SELECT p.*, u.username 
+        FROM posts p 
+        JOIN users u ON p.user_id = u.id 
+        ORDER BY p.created_at DESC`, (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+app.delete('/api/admin/posts/:id', verifyAdmin, (req, res) => {
+    db.run("DELETE FROM posts WHERE id = ?", [req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Post o\'chirildi' });
+    });
 });
 
 // --- Socket.io Logic for Video Call ---

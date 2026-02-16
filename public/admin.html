@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milliy Gilam - Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0099cc;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #333333;
+            --danger: #ff4444;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: white;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .menu-item {
+            display: block;
+            padding: 15px;
+            margin-bottom: 5px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+        }
+
+        .menu-item:hover,
+        .menu-item.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #0099cc, #00bcd4);
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 153, 204, 0.3);
+        }
+
+        .stat-num {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* Login Screen */
+        #loginScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        input {
+            padding: 15px;
+            width: 300px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            display: block;
+        }
+
+        button.login-btn {
+            padding: 15px;
+            width: 330px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Login Screen -->
+    <div id="loginScreen">
+        <div style="text-align: center;">
+            <h1 style="color: var(--primary);">Admin Panel</h1>
+            <input type="email" id="email" placeholder="Email (admin)">
+            <input type="password" id="password" placeholder="Parol">
+            <button class="login-btn" onclick="login()">Kirish</button>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="container" id="app" style="display: none;">
+        <div class="sidebar">
+            <h2 style="color: var(--primary); margin-bottom: 30px;">Milliy Admin</h2>
+            <div class="menu-item active" onclick="showSection('dashboard')">🏠 Bosh sahifa</div>
+            <div class="menu-item" onclick="showSection('users')">👥 Foydalanuvchilar</div>
+            <div class="menu-item" onclick="showSection('posts')">🖼️ Postlar</div>
+            <div class="menu-item" onclick="logout()" style="color: var(--danger); margin-top: 50px;">🚪 Chiqish</div>
+        </div>
+
+        <div class="content">
+            <!-- Dashboard -->
+            <div id="dashboard">
+                <h1>Statistika</h1>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-num" id="userCount">0</div>
+                        <div>Foydalanuvchilar</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #22b14c, #00e676);">
+                        <div class="stat-num" id="postCount">0</div>
+                        <div>Postlar</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #ff9800, #ffc107);">
+                        <div class="stat-num" id="msgCount">0</div>
+                        <div>Xabarlar</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users -->
+            <div id="users" style="display: none;">
+                <h1>Foydalanuvchilar</h1>
+                <div class="card">
+                    <table id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Amal</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Posts -->
+            <div id="posts" style="display: none;">
+                <h1>Postlar</h1>
+                <div id="postsGrid"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('adminToken');
+
+        // Check Auth
+        if (token) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('app').style.display = 'flex';
+            loadDashboard();
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await res.json();
+            if (data.token && data.isAdmin) {
+                localStorage.setItem('adminToken', data.token);
+                location.reload();
+            } else {
+                alert('Xato: ' + (data.error || 'Ruxsat yoq'));
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('adminToken');
+            location.reload();
+        }
+
+        function showSection(id) {
+            document.querySelectorAll('.content > div').forEach(div => div.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (id === 'dashboard') loadDashboard();
+            if (id === 'users') loadUsers();
+            if (id === 'posts') loadPosts();
+        }
+
+        async function api(url, method = 'GET') {
+            const res = await fetch(url, {
+                method,
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            return res.json();
+        }
+
+        async function loadDashboard() {
+            const stats = await api('/api/admin/stats');
+            document.getElementById('userCount').innerText = stats.users;
+            document.getElementById('postCount').innerText = stats.posts;
+            document.getElementById('msgCount').innerText = stats.messages;
+        }
+
+        async function loadUsers() {
+            const users = await api('/api/admin/users');
+            const tbody = document.querySelector('#usersTable tbody');
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td>${u.id}</td>
+                    <td>${u.username}</td>
+                    <td>${u.email}</td>
+                    <td><button class="btn-danger" onclick="deleteUser(${u.id})">O'chirish</button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteUser(id) {
+            if (!confirm('Aniqmi?')) return;
+            await api('/api/admin/users/' + id, 'DELETE');
+            loadUsers();
+        }
+
+        async function loadPosts() {
+            const posts = await api('/api/admin/posts');
+            const grid = document.getElementById('postsGrid');
+            grid.innerHTML = posts.map(p => `
+                <div class="card" style="padding:10px;">
+                    <img src="${p.image_url}" style="width:100%; height:150px; object-fit:cover; border-radius:10px;">
+                    <p><b>${p.username}</b></p>
+                    <p style="font-size:12px;">${p.caption || ''}</p>
+                    <button class="btn-danger" style="width:100%" onclick="deletePost(${p.id})">O'chirish</button>
+                </div>
+            `).join('');
+        }
+
+        async function deletePost(id) {
+            if (!confirm('Aniqmi?')) return;
+            await api('/api/admin/posts/' + id, 'DELETE');
+            loadPosts();
+        }
+    </script>
+</body>
+
+</html>
