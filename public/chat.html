@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xabarlar - Milliy Gilam</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Great+Vibes&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0099cc;
+            --secondary: #22b14c;
+            /* ... existing ... */
+
+            --accent: #ffcc00;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --border: #e1e8ed;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: var(--bg);
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230099cc' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .header {
+            background: var(--card-bg);
+            border-bottom: 2px solid var(--primary);
+            padding: 0.8rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .chat-container {
+            display: flex;
+            height: calc(100vh - 65px);
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .users-list {
+            width: 300px;
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+        }
+
+        .chat-window {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fdfdfd;
+        }
+
+        .user-item {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .user-item:hover,
+        .user-item.active {
+            background: #f0f8ff;
+        }
+
+        .user-item img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .chat-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            font-weight: bold;
+            color: var(--primary);
+            background: white;
+        }
+
+        .messages-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            position: relative;
+            margin-bottom: 5px;
+        }
+
+        .message .time {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        .message.sent {
+            background: var(--primary);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .message.received {
+            background: #eee;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        .message.received .time {
+            color: #888;
+        }
+
+        .input-area {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 25px;
+            font-family: inherit;
+        }
+
+        .input-area input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .input-area button {
+            padding: 10px 25px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .chat-image {
+            max-width: 200px;
+            border-radius: 10px;
+            margin-bottom: 5px;
+            display: block;
+            cursor: pointer;
+        }
+
+        .file-btn {
+            background: none !important;
+            color: #555 !important;
+            font-size: 1.5rem;
+            padding: 0 10px !important;
+            width: auto !important;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <a href="/"
+            style="text-decoration: none; font-size: 1.5rem; font-family: 'Great Vibes', cursive; color: var(--primary);">Milliy
+            Gilam Chat</a>
+        <a href="/" style="text-decoration: none; font-weight: 600; color: #555;">🏠 Asosiy sahifa</a>
+    </header>
+
+    <div class="chat-container">
+        <div class="users-list" id="usersList">
+            <!-- Users go here -->
+        </div>
+        <div class="chat-window">
+            <div class="chat-header" id="chatHeader">Suhbatdoshni tanlang</div>
+            <div class="messages-area" id="messagesArea">
+                <div style="text-align: center; color: #999; margin-top: 50px;">Suhbatni boshlash uchun chap tomondan
+                    biror kishini tanlang.</div>
+            </div>
+            <div class="input-area" style="display: none;" id="inputArea">
+                <button class="file-btn" onclick="document.getElementById('chatFile').click()">📎</button>
+                <input type="file" id="chatFile" style="display: none;" accept="image/*">
+                <input type="text" id="messageInput" placeholder="Xabar yozing..."
+                    onkeypress="if(event.key === 'Enter') sendMessage()">
+                <button onclick="sendMessage()">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Call Modal -->
+    <div id="videoCallModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; flex-direction:column; align-items:center;">
+        <div
+            style="position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center;">
+            <video id="remoteVideo" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+            <video id="localVideo" autoplay playsinline muted
+                style="position:absolute; bottom:100px; right:20px; width:120px; height:160px; border:2px solid white; border-radius:10px; object-fit:cover; transform:scaleX(-1);"></video>
+
+            <div style="position:absolute; bottom:30px; display:flex; gap:20px; z-index:10001;">
+                <button onclick="toggleMute()" id="muteBtn"
+                    style="width:60px; height:60px; border-radius:50%; background:rgba(255,255,255,0.2); color:white; border:none; font-size:24px; cursor:pointer; backdrop-filter:blur(5px);">🎤</button>
+                <button onclick="endCall()"
+                    style="width:60px; height:60px; border-radius:50%; background:red; color:white; border:none; font-size:30px; cursor:pointer; box-shadow:0 4px 15px rgba(255,0,0,0.5);">📞</button>
+            </div>
+
+            <div id="callStatus"
+                style="position:absolute; top:50px; color:white; font-size:18px; background:rgba(0,0,0,0.5); padding:10px 20px; border-radius:20px;">
+                Ulanmoqda...</div>
+        </div>
+    </div>
+
+    <!-- Incoming Call Modal -->
+    <div id="incomingCallModal"
+        style="display:none; position:fixed; top:20px; right:20px; background:white; padding:20px; border-radius:15px; box-shadow:0 10px 40px rgba(0,0,0,0.2); z-index:10000; flex-direction:column; gap:10px; width:300px; animation: slideIn 0.5s ease;">
+        <div style="display:flex; align-items:center; gap:15px;">
+            <img id="callerPic" src="" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
+            <div>
+                <div style="font-weight:bold; font-size:16px;" id="callerName">User</div>
+                <div style="color:#666; font-size:12px;">Video qo'ng'iroq...</div>
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+            <button onclick="acceptCall()"
+                style="flex:1; background:#4CAF50; color:white; border:none; padding:12px; border-radius:25px; cursor:pointer; font-weight:bold;">Javob
+                berish</button>
+            <button onclick="rejectCall()"
+                style="flex:1; background:#f44336; color:white; border:none; padding:12px; border-radius:25px; cursor:pointer; font-weight:bold;">Rad
+                etish</button>
+        </div>
+    </div>
+
+    <style>
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const token = localStorage.getItem('token');
+        const currentUser = JSON.parse(localStorage.getItem('user'));
+        let currentReceiverId = null;
+
+        if (!token) window.location.href = '/login.html';
+
+        async function loadConversations() {
+            try {
+                const res = await fetch('/api/conversations', { headers: { 'Authorization': `Bearer ${token}` } });
+                const users = await res.json();
+
+                const list = document.getElementById('usersList');
+                if (users.length === 0) {
+                    list.innerHTML = '<div style="padding:15px; color:#999; text-align:center;">Hali hech kim bilan yozishmagansiz. <br> <a href="/">Yangiliklar oqimidan</a> biror kishini toping.</div>';
+                    // HACK: Load all users if no convos exist so user can start chatting
+                    loadAllUsers();
+                } else {
+                    renderUsers(users);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadAllUsers() {
+            // Fallback to show all users if no conversations
+            try {
+                const res = await fetch('/api/users');
+                const users = await res.json();
+                const filtered = users.filter(u => u.id !== currentUser.id);
+                renderUsers(filtered);
+            } catch (e) { }
+        }
+
+        function renderUsers(users) {
+            document.getElementById('usersList').innerHTML = users.map(user => `
+            <div class="user-item" onclick="openChat(${user.id}, '${user.username}')">
+                <img src="${user.profile_pic || 'https://ui-avatars.com/api/?background=random'}" >
+                <div>
+                    <strong>${user.username}</strong>
+                </div>
+            </div>
+        `).join('');
+        }
+
+        async function openChat(userId, username) {
+            currentReceiverId = userId;
+            // Add Video Call Button dynamically
+            document.getElementById('chatHeader').innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                    <span>${username}</span>
+                    <button onclick="startVideoCall()" title="Video Qo'ng'iroq" style="background:none; border:none; cursor:pointer; font-size:24px; color:var(--primary); padding:5px; border-radius:50%; transition:0.2s;">📹</button>
+                </div>
+            `;
+            document.getElementById('inputArea').style.display = 'flex';
+            document.getElementById('inputArea').style.display = 'flex';
+            document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
+
+            // Highlight selected user
+            const selectedItem = document.querySelector(`.user-item[onclick*="${userId}"]`);
+            if (selectedItem) selectedItem.classList.add('active');
+
+            loadMessages();
+        }
+
+        async function loadMessages() {
+            if (!currentReceiverId) return;
+            try {
+                const res = await fetch(`/api/messages/${currentReceiverId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const messages = await res.json();
+
+                const area = document.getElementById('messagesArea');
+                area.innerHTML = '';
+
+                messages.forEach(msg => {
+                    const div = document.createElement('div');
+                    const isSent = msg.sender_id === currentUser.id;
+                    div.className = `message ${isSent ? 'sent' : 'received'}`;
+
+                    const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    let content = '';
+                    if (msg.image_url) {
+                        content += `<img src="${msg.image_url}" class="chat-image" onclick="window.open(this.src)">`;
+                    }
+                    if (msg.text) {
+                        content += `<div>${msg.text}</div>`;
+                    }
+
+                    div.innerHTML = `${content} <div class="time">${time}</div>`;
+                    area.appendChild(div);
+                });
+                area.scrollTop = area.scrollHeight;
+            } catch (e) { console.error(e); }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const fileInput = document.getElementById('chatFile');
+            const text = input.value.trim();
+            const file = fileInput.files[0];
+
+            if ((!text && !file) || !currentReceiverId) return;
+
+            const formData = new FormData();
+            formData.append('receiver_id', currentReceiverId);
+            formData.append('text', text);
+            if (file) formData.append('image', file);
+
+            try {
+                const res = await fetch('/api/messages', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }, // Content-Type is auto-set for FormData
+                    body: formData
+                });
+
+                if (res.ok) {
+                    input.value = '';
+                    fileInput.value = ''; // Reset file input
+                    loadMessages(); // Refresh
+                } else {
+                    const data = await res.json();
+                    alert('Error: ' + data.error);
+                }
+            } catch (e) { alert('Xato: ' + e.message); }
+        }
+
+        loadConversations();
+
+        // Auto refresh every 5s
+        setInterval(() => {
+            if (currentReceiverId) loadMessages();
+        }, 5000);
+
+        // --- Video Call Logic ---
+        const socket = io();
+        let localStream;
+        let remoteStream;
+        let peerConnection;
+        let incomingSignal = null;
+        let callTargetId = null;
+
+        const rtcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+
+        socket.on('connect', () => {
+            console.log('Connected to socket', socket.id);
+            socket.emit('register-user', currentUser.id);
+        });
+
+        // Start Call
+        async function startVideoCall() {
+            if (!currentReceiverId) return;
+            callTargetId = currentReceiverId;
+
+            document.getElementById('videoCallModal').style.display = 'flex';
+            document.getElementById('callStatus').innerText = "Qo'ng'iroq qilinmoqda...";
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('localVideo').srcObject = localStream;
+
+                createPeerConnection();
+
+                // Add tracks
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                // Send offer
+                socket.emit('call-user', {
+                    targetUserId: callTargetId,
+                    signalData: offer,
+                    callerId: currentUser.id,
+                    callerName: currentUser.username,
+                    callerPic: currentUser.profile_pic
+                });
+
+            } catch (err) {
+                console.error(err);
+                alert("Kameraga ruxsat berilmadi yoki xato: " + err.message);
+                endCall();
+            }
+        }
+
+        // Incoming Call
+        socket.on('incoming-call', (data) => {
+            console.log("Incoming call from", data.name);
+            incomingSignal = data.signal;
+            callTargetId = data.from; // The caller is now our target
+
+            document.getElementById('callerName').innerText = data.name;
+            document.getElementById('callerPic').src = data.pic || 'https://ui-avatars.com/api/?background=random';
+            document.getElementById('incomingCallModal').style.display = 'flex';
+
+            // Play ringtone (optional)
+        });
+
+        async function acceptCall() {
+            document.getElementById('incomingCallModal').style.display = 'none';
+            document.getElementById('videoCallModal').style.display = 'flex';
+            document.getElementById('callStatus').innerText = "Ulanmoqda...";
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('localVideo').srcObject = localStream;
+
+                createPeerConnection();
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(incomingSignal));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+
+                socket.emit('answer-call', {
+                    targetUserId: callTargetId,
+                    signalData: answer
+                });
+
+            } catch (err) {
+                console.error(err);
+                alert("Xato: " + err.message);
+                endCall();
+            }
+        }
+
+        function rejectCall() {
+            document.getElementById('incomingCallModal').style.display = 'none';
+            socket.emit('end-call', { targetUserId: callTargetId });
+            callTargetId = null;
+        }
+
+        socket.on('call-accepted', async (signal) => {
+            document.getElementById('callStatus').innerText = "Ulangan";
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
+        });
+
+        socket.on('ice-candidate', async (candidate) => {
+            if (peerConnection) {
+                try {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                } catch (e) { console.error("Error adding ice candidate", e); }
+            }
+        });
+
+        socket.on('call-ended', () => {
+            alert("Suhbat yakunlandi");
+            closeVideoModal();
+        });
+
+        function endCall() {
+            if (callTargetId) {
+                socket.emit('end-call', { targetUserId: callTargetId });
+            }
+            closeVideoModal();
+        }
+
+        function closeVideoModal() {
+            document.getElementById('videoCallModal').style.display = 'none';
+            document.getElementById('incomingCallModal').style.display = 'none';
+
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            callTargetId = null;
+        }
+
+        function createPeerConnection() {
+            peerConnection = new RTCPeerConnection(rtcConfig);
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('ice-candidate', {
+                        targetUserId: callTargetId,
+                        candidate: event.candidate
+                    });
+                }
+            };
+
+            peerConnection.ontrack = (event) => {
+                document.getElementById('remoteVideo').srcObject = event.streams[0];
+            };
+
+            // Connection state debugging
+            peerConnection.onconnectionstatechange = () => {
+                console.log("Connection State:", peerConnection.connectionState);
+                if (peerConnection.connectionState === 'connected') {
+                    document.getElementById('callStatus').style.display = 'none';
+                }
+            };
+        }
+
+        function toggleMute() {
+            if (localStream) {
+                const track = localStream.getAudioTracks()[0];
+                track.enabled = !track.enabled;
+                document.getElementById('muteBtn').innerText = track.enabled ? '🎤' : '🔇';
+                document.getElementById('muteBtn').style.background = track.enabled ? 'rgba(255,255,255,0.2)' : 'red';
+            }
+        }
+    </script>
+</body>
+
+</html>

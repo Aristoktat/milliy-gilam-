@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil - Milliy Gilam</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Great+Vibes&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0099cc;
+            --secondary: #22b14c;
+            --accent: #ffcc00;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --border: #e1e8ed;
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            /* Haqiqiy Atlas/Ikat naqshi (SVG Zig-Zag) */
+            background-color: #f7f9fc;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='atlas' width='100' height='100' patternUnits='userSpaceOnUse'%3E%3Cpath d='M0 25 L25 50 L50 25 L75 50 L100 25' fill='none' stroke='%23e63946' stroke-width='4' stroke-opacity='0.1'/%3E%3Cpath d='M0 50 L25 75 L50 50 L75 75 L100 50' fill='none' stroke='%230099cc' stroke-width='4' stroke-opacity='0.1'/%3E%3Cpath d='M0 75 L25 100 L50 75 L75 100 L100 75' fill='none' stroke='%23ffcc00' stroke-width='4' stroke-opacity='0.1'/%3E%3Cpath d='M0 0 L25 25 L50 0 L75 25 L100 0' fill='none' stroke='%2322b14c' stroke-width='4' stroke-opacity='0.1'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23atlas)' /%3E%3C/svg%3E");
+        }
+
+        .header {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 0.8rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-top: 5px solid linear-gradient(90deg, #d32f2f, #fbc02d, #388e3c, #1976d2);
+        }
+
+        .header-line {
+            height: 5px;
+            background: linear-gradient(90deg, #d32f2f 0%, #fbc02d 25%, #388e3c 50%, #1976d2 75%, #d32f2f 100%);
+            width: 100%;
+            position: fixed;
+            top: 0;
+            z-index: 101;
+        }
+
+        .logo {
+            font-family: 'Great Vibes', cursive;
+            font-size: 2.2rem;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .profile-header {
+            background: var(--card-bg);
+            padding: 3rem 2rem;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            gap: 3rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        .profile-pic {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid white;
+            box-shadow: 0 0 0 4px var(--accent);
+        }
+
+        .profile-info h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .profile-stats {
+            display: flex;
+            gap: 2rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-weight: 800;
+            font-size: 1.2rem;
+            display: block;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #777;
+        }
+
+        .btn {
+            padding: 8px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .btn-edit {
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .btn-follow {
+            background: var(--primary);
+            color: white;
+        }
+
+        .posts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .grid-item {
+            position: relative;
+            aspect-ratio: 1;
+            overflow: hidden;
+            border-radius: 8px;
+            background: #eee;
+            cursor: pointer;
+        }
+
+        .grid-item img,
+        .grid-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: 0.3s;
+        }
+
+        .grid-item:hover img,
+        .grid-item:hover video {
+            transform: scale(1.05);
+        }
+
+        .video-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        .grid-item .grid-stats {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 8px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+            display: flex;
+            justify-content: space-around;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            z-index: 3;
+            text-shadow: 0 1px 2px black;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .modal-header {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .close-btn {
+            cursor: pointer;
+            color: #999;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+
+        @media (max-width: 600px) {
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .posts-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-line"></div>
+    <header class="header" style="margin-top: 5px;">
+        <a href="/" class="logo">Milliy Gilam</a>
+        <a href="/" style="text-decoration: none; font-weight: 600; color: #555;">🏠 Bosh sahifa</a>
+    </header>
+
+    <div class="container">
+        <div class="profile-header">
+            <img id="userPic" src="" alt="Profile" class="profile-pic"
+                onerror="this.src='https://ui-avatars.com/api/?name=User&background=random'">
+            <div class="profile-info">
+                <h1 id="userName">Yuklanmoqda...</h1>
+                <p id="userEmail" style="color: #666; margin-bottom: 10px;"></p>
+                <p id="userBio" style="font-style: italic; color: #555; margin-bottom: 10px;"></p>
+                <div class="profile-stats">
+                    <div class="stat-item"><span class="stat-value" id="postsCount">0</span><span
+                            class="stat-label">Postlar</span></div>
+                    <div class="stat-item" onclick="showFollowers()" style="cursor:pointer"><span class="stat-value"
+                            id="followersCount">0</span><span class="stat-label">Kuzatuvchilar</span></div>
+                    <div class="stat-item" onclick="showFollowing()" style="cursor:pointer"><span class="stat-value"
+                            id="followingCount">0</span><span class="stat-label">Kuzatmoqda</span></div>
+                </div>
+                <div id="actionButtons"></div>
+            </div>
+        </div>
+
+        <h2 style="margin-bottom: 1rem; padding-left: 10px; border-left: 4px solid var(--primary);">Mening Gilamim</h2>
+        <div id="postsGrid" class="posts-grid">
+            <!-- Posts go here -->
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Profilni tahrirlash <span class="close-btn"
+                    onclick="closeEditModal()">&times;</span></div>
+            <div class="form-group">
+                <label>Avatar URL (Rasm manzili)</label>
+                <input type="text" id="editAvatar" placeholder="https://...">
+                <div class="file-upload-wrapper" onclick="document.getElementById('avatarFile').click()"
+                    style="margin-top:5px; padding:10px; font-size:0.8rem; border:1px dashed #ccc;">
+                    Yoki kompyuterdan yuklash (Bosish)
+                </div>
+                <input type="file" id="avatarFile" accept="image/*" style="display:none" onchange="uploadAvatarFile()">
+            </div>
+            <div class="form-group">
+                <label>Bio (O'zingiz haqingizda)</label>
+                <textarea id="editBio" rows="3"></textarea>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="saveProfile()">Saqlash</button>
+        </div>
+    </div>
+
+    <!-- Post Options Modal -->
+    <div id="postOptionsModal" class="modal">
+        <div class="modal-content" style="text-align: center;">
+            <div class="modal-header">Post boshqaruvi <span class="close-btn"
+                    onclick="closePostOptions()">&times;</span></div>
+            <p id="selectedPostCaption" style="margin-bottom: 20px; color: #666; font-style: italic;"></p>
+            <button class="btn btn-primary" style="width:100%; margin-bottom: 10px;" onclick="editPost()">✏️
+                Tahrirlash</button>
+            <button class="btn logout-btn" style="width:100%; background:#fff0f0; color:red; border:1px solid red;"
+                onclick="deletePost()">🗑️ O'chirish</button>
+        </div>
+    </div>
+
+    <!-- Users List Modal -->
+    <div id="usersListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><span id="usersListTitle">Foydalanuvchilar</span> <span class="close-btn"
+                    onclick="document.getElementById('usersListModal').classList.remove('active')">&times;</span></div>
+            <div id="usersListContent" style="max-height: 300px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <!-- Edit Post Content Modal -->
+    <div id="editPostContentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Postni tahrirlash <span class="close-btn"
+                    onclick="document.getElementById('editPostContentModal').classList.remove('active')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label>Izoh</label>
+                <textarea id="editPostCaptionVal" rows="4"></textarea>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="savePostEdit()">Saqlash</button>
+        </div>
+    </div>
+
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('id');
+        const token = localStorage.getItem('token');
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        let selectedPostId = null;
+
+        // If no ID provided, redirect or show current user
+        const targetUserId = userId || currentUser.id;
+        let userPosts = [];
+
+        if (!targetUserId) {
+            window.location.href = '/login.html';
+        }
+
+        async function loadProfile() {
+            try {
+                // Load User Info
+                const userRes = await fetch(`/api/users/${targetUserId}`);
+                const user = await userRes.json();
+
+                document.getElementById('userName').textContent = user.username;
+                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('userBio').textContent = user.bio || '';
+                document.getElementById('userPic').src = user.profile_pic || `https://ui-avatars.com/api/?name=${user.username}&background=random`;
+
+                // Pre-fill edit modal
+                if (currentUser.id == targetUserId) {
+                    document.getElementById('editAvatar').value = user.profile_pic || '';
+                    document.getElementById('editBio').value = user.bio || '';
+                }
+
+                // Load Posts
+                const postsRes = await fetch(`/api/users/${targetUserId}/posts`);
+                const posts = await postsRes.json();
+
+                document.getElementById('postsCount').textContent = posts.length;
+
+                userPosts = posts; // Store globally
+                const grid = document.getElementById('postsGrid');
+                if (posts.length === 0) {
+                    grid.style.display = 'block';
+                    grid.innerHTML = '<p style="text-align:center; padding: 20px; color:#999;">Hozircha postlar yo\'q</p>';
+                } else {
+                    grid.innerHTML = posts.map(post => {
+                        const isVideo = post.image_url.match(/\.(mp4|webm|ogg)$/i) || (post.media_type === 'video');
+                        const clickAction = (currentUser.id == targetUserId) ? `openPostOptions(${post.id})` : '';
+                        return `
+                    <div class="grid-item" onclick="${clickAction}">
+                        ${isVideo ?
+                                `<video src="${post.image_url}"></video><span class="video-icon">▶</span>` :
+                                `<img src="${post.image_url}" alt="Post">`
+                            }
+                        <div class="grid-stats">
+                            <span>❤️ ${post.like_count || 0}</span>
+                            <span>💬 ${post.comment_count || 0}</span>
+                        </div>
+                    </div>
+                `}).join('');
+                }
+
+                // Load Followers/Following Stats and Check Status
+                updateFollowStats();
+
+                // Action Buttons
+                const actionDiv = document.getElementById('actionButtons');
+                if (currentUser.id == targetUserId) {
+                    actionDiv.innerHTML = '<button class="btn btn-edit" onclick="openEditModal()">Profilni tahrirlash</button> <button class="btn btn-edit" onclick="authLogout()">Chiqish</button>';
+                } else {
+                    // Check if following
+                    checkFollowStatus(actionDiv);
+                }
+
+            } catch (error) {
+                console.error(error);
+                document.querySelector('.container').innerHTML = '<p style="text-align:center; margin-top:50px;">Foydalanuvchi topilmadi</p>';
+            }
+        }
+
+        function authLogout() {
+            if (confirm('Chiqishni xohlaysizmi?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login.html';
+            }
+        }
+
+        // --- Profile Edit Logic ---
+        function openEditModal() { document.getElementById('editProfileModal').classList.add('active'); }
+        function closeEditModal() { document.getElementById('editProfileModal').classList.remove('active'); }
+
+        async function uploadAvatarFile() {
+            const file = document.getElementById('avatarFile').files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.url) {
+                    document.getElementById('editAvatar').value = data.url;
+                    alert("Rasm yuklandi! Endi 'Saqlash' tugmasini bosing.");
+                }
+            } catch (e) { alert('Yuklashda xato'); }
+        }
+
+        async function saveProfile() {
+            const profile_pic = document.getElementById('editAvatar').value;
+            const bio = document.getElementById('editBio').value;
+            const btn = document.querySelector('#editProfileModal .btn-primary');
+            const originalText = btn.textContent;
+
+            btn.textContent = 'Saqlanmoqda...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/users/me', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ profile_pic, bio })
+                });
+
+                if (res.ok) {
+                    closeEditModal();
+                    loadProfile();
+                    alert('Profil muvaffaqiyatli yangilandi! 🎉');
+                } else {
+                    const data = await res.json();
+                    alert('Xatolik: ' + (data.error || 'Server xatosi'));
+                }
+            } catch (e) { alert('Tarmoq xatosi: ' + e.message); }
+            finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // --- Post Options Logic ---
+        function openPostOptions(postId) {
+            selectedPostId = postId;
+            const post = userPosts.find(p => p.id === postId);
+            const caption = post ? post.caption : '';
+
+            document.getElementById('selectedPostCaption').textContent = caption || '(Izoh yo\'q)';
+            document.getElementById('postOptionsModal').classList.add('active');
+        }
+
+        function closePostOptions() {
+            document.getElementById('postOptionsModal').classList.remove('active');
+            // Do NOT clear selectedPostId here, as it might be used for editing
+        }
+
+        async function deletePost() {
+            if (!confirm('Haqiqatan ham o\'chirmoqchimisiz?')) return;
+
+            try {
+                const res = await fetch(`/api/posts/${selectedPostId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    closePostOptions();
+                    loadProfile();
+                }
+            } catch (e) { alert('O\'chirishda xato'); }
+        }
+
+        function editPost() {
+            closePostOptions();
+            document.getElementById('editPostCaptionVal').value = document.getElementById('selectedPostCaption').textContent;
+            document.getElementById('editPostContentModal').classList.add('active');
+        }
+
+        async function savePostEdit() {
+            const caption = document.getElementById('editPostCaptionVal').value;
+            try {
+                const res = await fetch(`/api/posts/${selectedPostId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ caption })
+                });
+                if (res.ok) {
+                    document.getElementById('editPostContentModal').classList.remove('active');
+                    loadProfile();
+                    alert('Post yangilandi!');
+                } else {
+                    const data = await res.json();
+                    alert('Xatolik: ' + (data.error || 'Server xatosi'));
+                }
+            } catch (e) { alert('Yangilashda xato: ' + e.message); }
+        }
+
+        // --- Follow Logic ---
+        async function updateFollowStats() {
+            try {
+                const res1 = await fetch(`/api/users/${targetUserId}/followers`);
+                const followers = await res1.json();
+                document.getElementById('followersCount').textContent = followers.length;
+
+                const res2 = await fetch(`/api/users/${targetUserId}/following`);
+                const following = await res2.json();
+                document.getElementById('followingCount').textContent = following.length;
+            } catch (e) { }
+        }
+
+        async function checkFollowStatus(container) {
+            try {
+                const res = await fetch(`/api/users/${targetUserId}/followers`);
+                const followers = await res.json();
+                const isFollowing = followers.some(u => u.id == currentUser.id);
+
+                renderFollowButton(container, isFollowing);
+            } catch (e) {
+                renderFollowButton(container, false);
+            }
+        }
+
+        function renderFollowButton(container, isFollowing) {
+            const btnText = isFollowing ? 'Kuzatuvdasiz' : 'Kuzatish';
+            const btnStyle = isFollowing ? 'background:#ccc; color:#333' : '';
+            container.innerHTML = `<button class="btn btn-follow" onclick="toggleFollow()" style="${btnStyle}">${btnText}</button> 
+                                   <a href="/chat.html" class="btn btn-follow" style="background:#0099cc; margin-left:10px; text-decoration:none;">✉️ Xabar yozish</a>`;
+        }
+
+        async function toggleFollow() {
+            try {
+                const res = await fetch(`/api/users/${targetUserId}/follow`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    updateFollowStats();
+                    checkFollowStatus(document.getElementById('actionButtons'));
+                } else {
+                    alert(data.error);
+                }
+            } catch (e) { alert('Xato'); }
+        }
+
+        async function showFollowers() {
+            const res = await fetch(`/api/users/${targetUserId}/followers`);
+            const users = await res.json();
+            showUserList('Kuzatuvchilar', users);
+        }
+
+        async function showFollowing() {
+            const res = await fetch(`/api/users/${targetUserId}/following`);
+            const users = await res.json();
+            showUserList('Kuzatmoqda', users);
+        }
+
+        function showUserList(title, users) {
+            document.getElementById('usersListTitle').textContent = title;
+            const content = document.getElementById('usersListContent');
+            if (users.length === 0) content.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Ro\'yxat bo\'sh</p>';
+            else {
+                content.innerHTML = users.map(u => `
+                    <div style="display:flex; align-items:center; gap:10px; padding:10px; border-bottom:1px solid #eee; cursor:pointer;" onclick="window.location.href='/profile.html?id=${u.id}'">
+                        <img src="${u.profile_pic || 'https://ui-avatars.com/api/?name=User'}" style="width:40px; height:40px; border-radius:50%;">
+                        <span>${u.username}</span>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('usersListModal').classList.add('active');
+        }
+
+        loadProfile();
+    </script>
+</body>
+
+</html>

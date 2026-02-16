@@ -1,0 +1,28 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="grad1" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" style="stop-color:#0099cc;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f8f9fa;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+  <g fill="none" stroke="#22b14c" stroke-width="2" transform="translate(100,100)">
+    <circle cx="0" cy="0" r="90" stroke="#ffcc00" stroke-width="4" fill="url(#grad1)" opacity="0.3" />
+    <path d="M0 -80 Q20 -40 0 0 Q-20 -40 0 -80 Z" fill="#e63946" transform="rotate(0)" />
+    <path d="M0 -80 Q20 -40 0 0 Q-20 -40 0 -80 Z" fill="#e63946" transform="rotate(45)" />
+    <path d="M0 -80 Q20 -40 0 0 Q-20 -40 0 -80 Z" fill="#e63946" transform="rotate(90)" />
+    <path d="M0 -80 Q20 -40 0 0 Q-20 -40 0 -80 Z" fill="#e63946" transform="rotate(135)" />
+    <path d="M0 -80 Q20 -40 0 0 Q-20 -40 0 -80 Z" fill="#e63946" transform="rotate(180)" />
+    <path d="M0 -80 Q20 -40 0 0 Q-20 -40 0 -80 Z" fill="#e63946" transform="rotate(225)" />
+    <path d="M0 -80 Q20 -40 0 0 Q-20 -40 0 -80 Z" fill="#e63946" transform="rotate(270)" />
+    <path d="M0 -80 Q20 -40 0 0 Q-20 -40 0 -80 Z" fill="#e63946" transform="rotate(315)" />
+    <circle cx="0" cy="0" r="10" fill="#ffcc00" />
+    <path d="M0 -60 L10 -40 L0 -20 L-10 -40 Z" fill="#22b14c" transform="rotate(22.5)" />
+    <path d="M0 -60 L10 -40 L0 -20 L-10 -40 Z" fill="#22b14c" transform="rotate(67.5)" />
+    <path d="M0 -60 L10 -40 L0 -20 L-10 -40 Z" fill="#22b14c" transform="rotate(112.5)" />
+    <path d="M0 -60 L10 -40 L0 -20 L-10 -40 Z" fill="#22b14c" transform="rotate(157.5)" />
+    <path d="M0 -60 L10 -40 L0 -20 L-10 -40 Z" fill="#22b14c" transform="rotate(202.5)" />
+    <path d="M0 -60 L10 -40 L0 -20 L-10 -40 Z" fill="#22b14c" transform="rotate(247.5)" />
+    <path d="M0 -60 L10 -40 L0 -20 L-10 -40 Z" fill="#22b14c" transform="rotate(292.5)" />
+    <path d="M0 -60 L10 -40 L0 -20 L-10 -40 Z" fill="#22b14c" transform="rotate(337.5)" />
+  </g>
+</svg>

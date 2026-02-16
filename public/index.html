@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milliy Gilam</title>
+    <!-- Google Fonts: Montserrat va Great Vibes (kaligrafiya uchun) -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Great+Vibes&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0099cc;
+            /* Moviy (Bayroq) */
+            --secondary: #22b14c;
+            /* Yashil (Tabiat/Bayroq) */
+            --accent: #ffcc00;
+            /* Oltin (Quyosh/Yulduzlar) */
+            --danger: #e63946;
+            /* Atlas qizili */
+            --bg: #f8f9fa;
+            --card-bg: rgba(255, 255, 255, 0.92);
+            /* Shaffof oq */
+            --border: #e1e8ed;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f7f9fc;
+            background-image: url("images/naqsh.svg");
+            background-size: 300px;
+            background-repeat: repeat;
+            position: relative;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        /* Background Overlay */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.94);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Stories */
+        .stories-container {
+            display: flex;
+            gap: 15px;
+            padding: 1rem 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            /* Firefox */
+            margin-bottom: 1.5rem;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 15px 20px;
+            position: static;
+            /* Revert position: relative */
+        }
+
+        /* Preloader */
+        #preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .spinner {
+            width: 80px;
+            height: 80px;
+            animation: spin 4s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Atlas/Adras Pattern Header Line */
+        .header-line {
+            height: 8px;
+            background: linear-gradient(90deg, #d32f2f 0%, #fbc02d 25%, #388e3c 50%, #1976d2 75%, #d32f2f 100%);
+            background-size: 200% 100%;
+            animation: moveGradient 15s linear infinite;
+        }
+
+        @keyframes moveGradient {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            100% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 0.8rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .logo-text {
+            font-family: 'Great Vibes', cursive;
+            /* Elegant font */
+            font-size: 2.2rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        /* Milliy Naqsh Icon */
+        .logo-icon {
+            width: 45px;
+            height: 45px;
+            object-fit: contain;
+            margin-right: 10px;
+            animation: spin 60s linear infinite;
+            /* Slow spin for logo */
+        }
+
+        .header-right {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .search-input {
+            padding: 0.6rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            font-family: inherit;
+            width: 250px;
+            transition: 0.3s;
+            background: #f1f3f5;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            width: 300px;
+        }
+
+        .user-info {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: inherit;
+            transition: 0.2s;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--primary), #007bb5);
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 153, 204, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 153, 204, 0.4);
+        }
+
+        .logout-btn {
+            background: #fff0f0;
+            color: var(--danger);
+            border: 1px solid #ffcccc;
+        }
+
+        .logout-btn:hover {
+            background: #ffe6e6;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            max-width: 1100px;
+            margin: 2rem auto;
+            width: 95%;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2.5rem;
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-top: 1px solid #ddd;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 999;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: #555;
+            font-size: 0.8rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 1.5rem;
+            margin-bottom: 2px;
+        }
+
+        @media (max-width: 800px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .search-input {
+                width: 100%;
+                /* Full width search or hidden? Let's keep it small */
+                width: 120px;
+                padding: 5px;
+            }
+
+            .logo-text {
+                display: none;
+                /* Hide text on mobile to save space */
+            }
+
+            .header-right {
+                gap: 5px;
+            }
+
+            /* Hide desktop buttons on mobile */
+            #userInfo,
+            #chatBtn,
+            #createPostBtn,
+            #logoutBtn,
+            #savedBtn {
+                display: none !important;
+            }
+
+            /* Ensure notif button stays but simple */
+            #notifBtn {
+                display: inline-block !important;
+                background: none;
+                color: #333;
+                box-shadow: none;
+                font-size: 1.2rem;
+                padding: 0;
+            }
+
+            .bottom-nav {
+                display: flex;
+            }
+
+            .app {
+                padding-bottom: 60px;
+                /* Space for nav */
+            }
+
+            .main-content {
+                margin: 1rem auto;
+            }
+        }
+
+        .feed h2,
+        .sidebar h2 {
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            color: #444;
+            border-left: 4px solid var(--primary);
+            padding-left: 10px;
+        }
+
+        .post {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            margin-bottom: 3rem;
+            /* Increased spacing */
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            border: 1px solid white;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .post:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .post-header img {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--accent);
+            /* Gold border like status */
+            padding: 2px;
+        }
+
+        .post-image {
+            width: 100%;
+            max-height: 600px;
+            object-fit: contain;
+            background: #000;
+            display: block;
+        }
+
+        video.post-image {
+            max-height: 500px;
+        }
+
+        .post-footer {
+            padding: 1rem;
+        }
+
+        .post-footer p {
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+
+        .post-footer small {
+            color: #999;
+            font-size: 0.8rem;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.8rem 1rem;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .post-actions button {
+            flex: 1;
+            padding: 0.6rem;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .post-actions button:hover {
+            background: #f5f8fa;
+            color: var(--primary);
+        }
+
+        .sidebar {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+            box-shadow: var(--shadow);
+        }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f5f5f5;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .user-card:hover {
+            background: #f9f9f9;
+            padding-left: 5px;
+            border-radius: 8px;
+        }
+
+        .user-card:last-child {
+            border-bottom: none;
+        }
+
+        .user-card img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-card strong {
+            display: block;
+            font-size: 0.95rem;
+            color: #333;
+        }
+
+        .user-card p {
+            font-size: 0.8rem;
+            color: #888;
+            margin: 2px 0 0 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #777;
+        }
+
+        .login-message {
+            background: var(--card-bg);
+            padding: 3rem;
+            text-align: center;
+            border-radius: var(--radius);
+            margin: 4rem auto;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-message h2 {
+            color: var(--primary);
+            font-family: 'Great Vibes', cursive;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .login-message a {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 25px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .login-message a.secondary {
+            background: white;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: var(--radius);
+            width: 90%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: var(--primary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-family: inherit;
+            transition: 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--secondary);
+            outline: none;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Comments */
+        .comments-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #efefef;
+        }
+
+        .comment-item {
+            margin-bottom: 1rem;
+            padding: 10px;
+            background: #f8faff;
+            border-radius: 8px;
+        }
+
+        /* Notifications */
+        .notification-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            background: white;
+            transition: 0.2s;
+        }
+
+        .notification-item:hover {
+            background: #f9f9f9;
+        }
+
+        .notification-item img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-time {
+            font-size: 0.75rem;
+            color: #999;
+        }
+
+        /* Upload Box Style */
+        .file-upload-wrapper {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+
+        .file-upload-wrapper:hover {
+            border-color: var(--primary);
+            background: #f0f8ff;
+        }
+
+
+
+        .stories-container::-webkit-scrollbar {
+            display: none;
+            /* Chrome, Safari, Opera */
+        }
+
+        .story-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            width: 70px;
+        }
+
+        .story-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 5px;
+            position: relative;
+            background-color: #f0f0f0;
+            /* Placeholder background */
+        }
+
+        .story-circle img,
+        .story-circle video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .story-circle.unseen {
+            border: 3px solid var(--primary);
+            /* Highlight unseen stories */
+            padding: 2px;
+        }
+
+        .story-circle.seen {
+            border: 2px solid #ccc;
+            /* Less prominent for seen stories */
+            padding: 2px;
+        }
+
+        .story-add {
+            font-size: 2rem;
+            color: var(--primary);
+            border: 2px dashed var(--primary);
+        }
+
+        .story-username {
+            font-size: 0.8rem;
+            color: #555;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        /* Story Viewer Modal */
+        #storyViewer {
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #storyViewer .story-content-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #storyViewer img,
+        #storyViewer video {
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: var(--radius);
+            background-color: black;
+        }
+
+        #storyViewer video {
+            width: auto;
+            height: auto;
+        }
+
+        #storyViewer .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            line-height: 1;
+            z-index: 10;
+        }
+
+        #storyProgress {
+            width: 100%;
+            height: 5px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        #storyBar {
+            height: 100%;
+            width: 0%;
+            background-color: white;
+            border-radius: 5px;
+            transition: width 0.1s linear;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="preloader">
+        <img src="images/naqsh.svg" class="spinner" alt="Yuklanmoqda...">
+    </div>
+    <div class="header-line"></div>
+    <div class="app">
+        <header class="header">
+            <a href="/" class="logo">
+                <img src="images/naqsh.svg" class="logo-icon" alt="Naqsh">
+                <span class="logo-text">Milliy Gilam</span>
+            </a>
+            <div class="header-right">
+                <input type="text" id="searchInput" class="search-input" placeholder="Qidiruv... (Post, Odamlar)">
+                <span class="user-info" id="userInfo"></span>
+                <a href="/saved.html" class="btn btn-primary" id="savedBtn"
+                    style="text-decoration:none; display:none; padding: 0.6rem;">📑</a>
+                <button class="btn btn-primary" id="notifBtn" style="display:none; padding: 0.6rem;">🔔</button>
+                <a href="/chat.html" class="btn btn-primary" id="chatBtn" style="text-decoration:none; display:none;">💬
+                    Chat</a>
+                <button class="btn btn-primary" id="createPostBtn" style="display:none;">📸 Post Yuklash</button>
+                <button class="btn logout-btn" id="logoutBtn" style="display:none;">Chiqish</button>
+            </div>
+        </header>
+
+        <div class="main-content" id="content" style="display: none;">
+            <!-- Stories Section -->
+            <div class="stories-container" id="storiesList">
+                <div class="story-item" onclick="document.getElementById('storyInput').click()">
+                    <div class="story-circle story-add">
+                        +
+                    </div>
+                    <span class="story-username">Qo'shish</span>
+                    <input type="file" id="storyInput" accept="image/*,video/*" style="display:none"
+                        onchange="uploadStory(this)">
+                </div>
+                <!-- Other stories will be injected here -->
+            </div>
+
+            <div class="container">
+                <main class="feed">
+                    <h2>Yangiliklar Oqimi</h2>
+                    <div id="feed" class="loading">Yuklanmoqda...</div>
+                </main>
+                <aside class="sidebar">
+                    <h2>Tavsiya etilganlar</h2>
+                    <div id="users"></div>
+                </aside>
+            </div>
+        </div>
+
+        <div id="notLoggedIn" class="login-message" style="display: none;">
+            <h2>Xush kelibsiz!</h2>
+            <p style="font-size: 1.2rem; margin-bottom: 2rem;">Milliy qadriyatlarimizni dunyoga ko'rsating.</p>
+            <div>
+                <a href="/login.html">Kirish</a>
+                <a href="/register.html" class="secondary">Ro'yxatdan o'tish</a>
+            </div>
+        </div>
+        <!-- Mobile Bottom Nav -->
+        <nav class="bottom-nav">
+            <a href="/" class="nav-item">
+                <span class="nav-icon">🏠</span>
+            </a>
+            <a href="/saved.html" class="nav-item">
+                <span class="nav-icon">📑</span>
+            </a>
+            <div class="nav-item" onclick="document.getElementById('createPostModal').classList.add('active')">
+                <span class="nav-icon" style="font-size: 2rem; color: var(--primary); margin-top:-5px;">⊕</span>
+            </div>
+            <a href="/chat.html" class="nav-item">
+                <span class="nav-icon">💬</span>
+            </a>
+            <a href="#" class="nav-item" id="mobileProfileLink">
+                <span class="nav-icon">👤</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Create Post Modal -->
+    <div id="createPostModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Yangi Post</h2>
+                <button class="close-btn" onclick="closeCreatePostModal()">&times;</button>
+            </div>
+            <form id="createPostForm">
+                <div class="form-group">
+                    <label>Media fayl (Rasm yoki Video)</label>
+                    <div class="file-upload-wrapper" onclick="document.getElementById('imageFile').click()">
+                        📂 Faylni tanlash uchun bosing
+                    </div>
+                    <input type="file" id="imageFile" accept="image/*,video/*" required style="display: none;"
+                        onchange="alert('Fayl tanlandi: ' + this.files[0].name)">
+                </div>
+                <div class="form-group">
+                    <label for="caption">Izoh</label>
+                    <textarea id="caption" placeholder="Do'stlaringizga bu haqda nima deysiz?"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Joylashtirish</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Comments Modal -->
+    <div id="commentsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Fikrlar</h2>
+                <button class="close-btn" onclick="closeCommentsModal()">&times;</button>
+            </div>
+            <div id="commentsList" class="comments-list"></div>
+            <form id="commentForm" style="display: none;">
+                <div class="form-group">
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="commentText" placeholder="Fikringizni yozing..." required>
+                        <button type="submit" class="btn btn-primary">Yuborish</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notifications Modal -->
+    <div id="notifModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Bildirishnomalar</h2>
+                <button class="close-btn"
+                    onclick="document.getElementById('notifModal').classList.remove('active')">&times;</button>
+            </div>
+            <div id="notifList" class="comments-list">
+                <!-- Notifications here -->
+            </div>
+        </div>
+
+        <!-- Story Viewer -->
+        <div id="storyViewer" class="modal" onclick="if(event.target === this) window.location.reload()">
+            <!-- CHIQISH BUTTON (DIRECT CHILD, MAX Z-INDEX) -->
+            <button
+                style="position:fixed; bottom:50px; left:50%; transform:translateX(-50%); background:white; color:red; border:4px solid red; font-size:24px; font-weight:bold; padding:20px 50px; border-radius:10px; z-index:2147483647; cursor:pointer; box-shadow: 0 0 20px rgba(0,0,0,1); pointer-events:auto;"
+                onclick="event.stopPropagation(); window.location.reload()">CHIQISH ✖</button>
+
+            <div
+                style="position:relative; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none;">
+
+                <div id="storyDebug"
+                    style="position:fixed; top:10px; left:10px; color:lime; background:rgba(0,0,0,0.8); padding:5px; z-index:10001; font-family:monospace; font-size:12px; max-width:80%; display:none;">
+                </div>
+
+                <img id="storyImage" src="" alt="Story"
+                    style="max-height: 80vh; max-width: 90vw; object-fit: contain; pointer-events:auto; cursor:pointer; border: 2px solid rgba(255,255,255,0.2);"
+                    onclick="event.stopPropagation(); window.location.reload()">
+
+                <div id="storyProgress" style="pointer-events:auto;">
+                    <div id="storyBar"></div>
+                </div>
+
+                <p
+                    style="color:white; margin-top:20px; font-size:16px; pointer-events:auto; text-shadow:0 1px 3px black;">
+                    Yopish uchun rasm ustiga yoki tugmaga bosing</p>
+            </div>
+        </div>
+
+        <script>
+            let currentUser = null;
+            let token = null;
+            let currentPostId = null;
+
+            // Check if user is logged in
+            function checkAuth() {
+                token = localStorage.getItem('token');
+                const user = localStorage.getItem('user');
+
+                if (!token || !user) {
+                    document.getElementById('notLoggedIn').style.display = 'block';
+                    return false;
+                }
+
+                currentUser = JSON.parse(user);
+
+                // Update mobile profile link
+                const mobileProfileLink = document.getElementById('mobileProfileLink');
+                if (mobileProfileLink) mobileProfileLink.href = `/profile.html?id=${currentUser.id}`;
+
+                // User info with link to profile
+                const userInfoContainer = document.getElementById('userInfo');
+                userInfoContainer.innerHTML = `
+                <a href="/profile.html?id=${currentUser.id}" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:5px;">
+                    <img src="${currentUser.profile_pic || 'https://ui-avatars.com/api/?name=' + currentUser.username}" 
+                         style="width:30px; height:30px; border-radius:50%; object-fit:cover;">
+                    <span>${currentUser.username}</span>
+                </a>
+            `;
+
+                document.getElementById('logoutBtn').style.display = 'inline-block';
+                document.getElementById('createPostBtn').style.display = 'inline-block';
+                document.getElementById('chatBtn').style.display = 'inline-block';
+                document.getElementById('notifBtn').style.display = 'inline-block';
+                document.getElementById('savedBtn').style.display = 'inline-block';
+                document.getElementById('content').style.display = 'block';
+
+                return true;
+            }
+
+            // Logout
+            document.getElementById('logoutBtn').addEventListener('click', async () => {
+                if (confirm("Haqiqatan ham chiqmoqchimisiz?")) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.reload();
+                }
+            });
+
+            // Create post modal
+            document.getElementById('createPostBtn').addEventListener('click', () => {
+                document.getElementById('createPostModal').classList.add('active');
+            });
+
+            function closeCreatePostModal() {
+                document.getElementById('createPostModal').classList.remove('active');
+                document.getElementById('createPostForm').reset();
+            }
+
+            document.getElementById('createPostForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const fileInput = document.getElementById('imageFile');
+                const caption = document.getElementById('caption').value;
+                const file = fileInput.files[0];
+
+                if (!file) {
+                    alert('Iltimos, rasm yoki video tanlang');
+                    return;
+                }
+
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                submitBtn.textContent = "Yuklanmoqda...";
+                submitBtn.disabled = true;
+
+                try {
+                    // 1. Rasmni serverga yuklash
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    const uploadRes = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+
+                    const uploadData = await uploadRes.json();
+
+                    if (!uploadRes.ok) {
+                        throw new Error(uploadData.error || 'Yuklashda xato');
+                    }
+
+                    const image_url = uploadData.url;
+                    const media_type = uploadData.media_type;
+
+                    // 2. Post yaratish (qaytgan rasm URL bilan)
+                    const response = await fetch('/api/posts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ image_url, caption, media_type })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Post yaratishda xato');
+                    }
+
+                    closeCreatePostModal();
+                    loadFeed();
+                    alert("🎉 Muvaffaqiyatli joylandi!");
+                } catch (error) {
+                    console.error('Error creating post:', error);
+                    alert(error.message || 'Xatolik yuz berdi');
+                } finally {
+                    submitBtn.textContent = "Joylashtirish";
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // Comments modal
+            function closeCommentsModal() {
+                document.getElementById('commentsModal').classList.remove('active');
+                document.getElementById('commentForm').reset();
+                currentPostId = null;
+            }
+
+            async function showComments(postId) {
+                currentPostId = postId;
+                document.getElementById('commentsModal').classList.add('active');
+                loadComments(postId);
+            }
+
+            async function loadComments(postId) {
+                try {
+                    const response = await fetch(`/api/posts/${postId}/comments`);
+                    const comments = await response.json();
+                    const commentsList = document.getElementById('commentsList');
+
+                    if (!comments || comments.length === 0) {
+                        commentsList.innerHTML = '<div class="empty-comments" style="text-align:center; color:#999;">Hozircha sharhlar yo\'q. Birinchi bo\'lib yozing!</div>';
+                    } else {
+                        commentsList.innerHTML = comments.map(comment => `
+            <div class="comment-item">
+              <div class="comment-header">
+                <strong>${comment.username}</strong>
+                <small>${new Date(comment.created_at).toLocaleDateString()}</small>
+              </div>
+              <div class="comment-text">${comment.text}</div>
+            </div>
+          `).join('');
+                    }
+
+                    document.getElementById('commentForm').style.display = 'block';
+                } catch (error) {
+                    console.error('Error loading comments:', error);
+                    document.getElementById('commentsList').innerHTML = '<div class="empty-comments">Sharhlar yuklashda xato</div>';
+                }
+            }
+
+            document.getElementById('commentForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                if (!currentPostId) return;
+
+                const text = document.getElementById('commentText').value;
+
+                try {
+                    const response = await fetch(`/api/posts/${currentPostId}/comments`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ text })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        alert(data.error || 'Sharh qo\'shishda xato');
+                        return;
+                    }
+
+                    document.getElementById('commentText').value = '';
+                    loadComments(currentPostId);
+
+                    // Update comment count in UI dynamically
+                    const commentCountSpan = document.getElementById(`comment-count-${currentPostId}`);
+                    if (commentCountSpan) {
+                        let count = parseInt(commentCountSpan.innerText) || 0;
+                        commentCountSpan.innerText = count + 1;
+                    }
+                } catch (error) {
+                    console.error('Error adding comment:', error);
+                    alert('Sharh qo\'shishda xato');
+                }
+            });
+
+            // Search
+            document.getElementById('searchInput').addEventListener('input', async (e) => {
+                const query = e.target.value.toLowerCase();
+
+                if (!query) {
+                    loadFeed();
+                    loadUsers();
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                    const data = await res.json();
+
+                    renderFeed(data.posts);
+                    renderUsers(data.users);
+
+                } catch (err) { console.error(err); }
+            });
+
+            // Load data
+            async function loadFeed() {
+                if (!token) {
+                    document.getElementById('feed').innerHTML = '<p style="text-align:center; padding:20px;">Iltimos, postlarni ko\'rish uchun <a href="/login.html">tizimga kiring</a>.</p>';
+                    return;
+                }
+                try {
+                    const res = await fetch('/api/feed', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (res.status === 401 || res.status === 403) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        alert('Sessiya vaqti tugadi. Iltimos, qaytadan kiring.');
+                        window.location.href = '/login.html';
+                        return;
+                    }
+
+                    if (!res.ok) throw new Error('Failed to load feed');
+                    const posts = await res.json();
+                    renderFeed(posts);
+                } catch (error) {
+                    console.error('Error loading feed:', error);
+                    document.getElementById('feed').innerHTML = '<p style="text-align:center; color:red; padding:20px;">Oqim yuklashda xato yuz berdi. <a href="#" onclick="location.reload()">Sahifani yangilang</a></p>';
+                }
+            }
+
+            function renderFeed(posts) {
+                const feedDiv = document.getElementById('feed');
+
+                if (!posts || posts.length === 0) {
+                    feedDiv.innerHTML = '<p style="text-align:center; padding: 20px;">Hozircha postlar yo\'q yoki hech narsa topilmadi 😞</p>';
+                    return;
+                }
+
+                feedDiv.innerHTML = posts.map(post => {
+                    let mediaContent;
+                    if (post.media_type === 'video') {
+                        mediaContent = `<video src="${post.image_url}" controls class="post-image"></video>`;
+                    } else {
+                        mediaContent = `<img src="${post.image_url}" alt="post" class="post-image" onerror="this.src='https://via.placeholder.com/500?text=Rasm+yuklanmadi'">`;
+                    }
+
+                    return `
+          <div class="post">
+            <div class="post-header">
+              <a href="/profile.html?id=${post.user_id}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.8rem;">
+                <img src="${post.profile_pic ? post.profile_pic : `https://ui-avatars.com/api/?name=${post.username}&background=random`}" 
+                     alt="${post.username}"
+                     onerror="this.src='https://ui-avatars.com/api/?name=${post.username}&background=random'">
+                <strong>${post.username}</strong>
+              </a>
+            </div>
+            ${mediaContent}
+            <div class="post-footer">
+              <p><strong>${post.username}</strong> ${post.caption}</p>
+              <small>${new Date(post.created_at).toLocaleString('uz-UZ')}</small>
+            </div>
+            <div class="post-actions">
+              <button onclick="likePost(${post.id})">
+                  <span id="like-text-${post.id}">❤️ ${post.like_count || 0}</span>
+              </button>
+              <button onclick="showComments(${post.id})">
+                  💬 <span id="comment-count-${post.id}">${post.comment_count || 0}</span>
+              </button>
+              <button onclick="savePost(${post.id})" id="save-btn-${post.id}">
+                  ${post.is_saved ? '🔖 Saqlandi' : '📑 Saqlash'}
+              </button>
+            </div>
+          </div>
+        `}).join('');
+            }
+
+            async function likePost(postId) {
+                try {
+                    const response = await fetch(`/api/posts/${postId}/like`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    const responseData = await response.json();
+
+                    if (!response.ok) {
+                        alert('Like qilishda xato');
+                        return;
+                    }
+
+                    // Update specific post like count in UI directly if possible
+                    const textSpan = document.getElementById(`like-text-${postId}`);
+                    if (textSpan) {
+                        const currentText = textSpan.innerText;
+                        const parts = currentText.split(' ');
+                        let count = parseInt(parts[1]) || 0;
+
+                        if (responseData.liked) count++;
+                        else count--;
+
+                        textSpan.innerText = `❤️ ${count}`;
+                    } else {
+                        loadFeed();
+                    }
+
+                } catch (error) {
+                    console.error('Error liking post:', error);
+                }
+            }
+
+            async function loadUsers() {
+                try {
+                    const res = await fetch('/api/users');
+                    const users = await res.json();
+                    renderUsers(users);
+                } catch (error) {
+                    console.error('Error loading users:', error);
+                    document.getElementById('users').innerHTML = '<p>Yuklashda xato</p>';
+                }
+            }
+
+            function renderUsers(users) {
+                const usersDiv = document.getElementById('users');
+                if (!users || users.length === 0) {
+                    usersDiv.innerHTML = '<p>Foydalanuvchilar yo\'q</p>';
+                    return;
+                }
+                usersDiv.innerHTML = users.map(user => `
+          <div class="user-card">
+            <a href="/profile.html?id=${user.id}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.8rem; width: 100%;">
+              <img src="${user.profile_pic ? user.profile_pic : `https://ui-avatars.com/api/?name=${user.username}&background=random`}" 
+                   alt="${user.username}"
+                   onerror="this.src='https://ui-avatars.com/api/?name=${user.username}&background=random'">
+              <div>
+                <strong>${user.username}</strong>
+                <p>${user.email || ''}</p>
+              </div>
+            </a>
+          </div>
+        `).join('');
+            }
+
+            async function savePost(postId) {
+                try {
+                    const res = await fetch(`/api/posts/${postId}/save`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        const btn = document.getElementById(`save-btn-${postId}`);
+                        if (btn) btn.innerHTML = data.saved ? '🔖 Saqlandi' : '📑 Saqlash';
+                    }
+                } catch (e) { console.error(e); }
+            }
+
+            // Notifications Logic
+            document.getElementById('notifBtn').addEventListener('click', async () => {
+                document.getElementById('notifModal').classList.add('active');
+                const notifList = document.getElementById('notifList');
+                notifList.innerHTML = '<p style="text-align:center;">Yuklanmoqda...</p>';
+
+                try {
+                    const res = await fetch('/api/notifications', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const notifs = await res.json();
+
+                    if (notifs.length === 0) {
+                        notifList.innerHTML = '<p style="text-align:center; color:#999;">Yangi xabarlar yo\'q</p>';
+                        return;
+                    }
+
+                    notifList.innerHTML = notifs.map(n => `
+                    <div class="notification-item">
+                        <img src="${n.profile_pic || 'https://ui-avatars.com/api/?name=' + n.username}" alt="user">
+                        <div class="notification-content">
+                             <strong>${n.username}</strong> ${n.message}
+                             <div class="notification-time">${new Date(n.created_at).toLocaleString()}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                } catch (e) {
+                    console.error(e);
+                    notifList.innerHTML = '<p>Xatolik</p>';
+                }
+            });
+
+            // Story Logic
+            async function loadStories() {
+                try {
+                    const res = await fetch('/api/stories', { headers: { 'Authorization': `Bearer ${token}` } });
+                    const stories = await res.json();
+                    renderStories(stories);
+                } catch (e) { console.error(e); }
+            }
+
+            const storiesData = {}; // Store stories here
+
+            let allStoryUsers = []; // global
+
+            function renderStories(users) {
+                // Update global data
+                allStoryUsers = users;
+
+                const list = document.getElementById('storiesList');
+                // Keep the "Add" button
+                const addBtn = list.firstElementChild.outerHTML;
+
+                const html = users.map(user => {
+                    // Store user data
+                    storiesData[user.user_id] = user;
+
+                    // Get the latest story image for thumbnail
+                    const latestStory = user.stories[user.stories.length - 1];
+                    const thumb = latestStory.media_type === 'image' ? latestStory.image_url : (user.profile_pic || 'https://ui-avatars.com/api/?name=' + user.username);
+                    const isVideo = latestStory.media_type === 'video';
+
+                    return `
+                    <div class="story-item" onclick="viewStories('${user.user_id}')" style="cursor:pointer;">
+                        <div class="story-circle ${user.has_unseen ? 'unseen' : 'seen'}">
+                            ${isVideo ? `<video src="${latestStory.image_url}" style="object-fit:cover; width:100%; height:100%; pointer-events:none;" playsinline muted loop autoplay></video>` : `<img src="${thumb}" alt="${user.username}" style="pointer-events:none;" onerror="this.src='https://ui-avatars.com/api/?name=${user.username}'">`}
+                        </div>
+                        <span class="story-username">${user.username}</span>
+                    </div>
+                `}).join('');
+
+                list.innerHTML = addBtn + html;
+
+                // Re-attach event listener for the Add button input since innerHTML wiped it
+                document.getElementById('storyInput').onchange = function () { uploadStory(this); };
+            }
+
+            // ...
+
+            window.viewStories = function (userId) {
+                console.log('Viewing stories for user:', userId);
+                const user = storiesData[userId];
+                if (!user) {
+                    console.error('User data not found for id:', userId);
+                    alert('Foydalanuvchi ma\'lumotlari topilmadi');
+                    return;
+                }
+
+                // Find index in the SORTED array we received from server
+                currentStoryUserIndex = allStoryUsers.findIndex(u => u.user_id === userId);
+
+                currentStoryData = user.stories;
+                storyIndex = 0;
+
+                const viewer = document.getElementById('storyViewer');
+                viewer.classList.add('active');
+                viewer.style.display = 'flex'; // Force visibility
+                viewer.style.zIndex = '2147483640'; // Force on top
+
+                showStory();
+            }
+
+
+
+            async function uploadStory(input) {
+                const file = input.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    alert('Hikoya yuklanmoqda...');
+                    const res = await fetch('/api/stories', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+
+                    if (res.ok) {
+                        alert('Hikoya qo\'shildi!');
+                        loadStories();
+                    } else {
+                        alert('Xatolik');
+                    }
+                } catch (e) { alert('Tarmoq xatosi'); }
+            }
+
+            let currentStoryData = null;
+            let storyIndex = 0;
+            let storyTimer = null;
+            let currentStoryUserIndex = -1;
+            // allStoryUsers is defined above as global logic
+
+
+            function showStory() {
+                if (!currentStoryData || storyIndex >= currentStoryData.length) {
+                    // Try to go to next user
+                    if (currentStoryUserIndex < allStoryUsers.length - 1) {
+                        currentStoryUserIndex++;
+                        currentStoryData = allStoryUsers[currentStoryUserIndex].stories;
+                        storyIndex = 0;
+                        showStory();
+                        return;
+                    }
+                    closeStoryViewer();
+                    return;
+                }
+
+                if (storyIndex < 0) {
+                    // Try to go to prev user
+                    if (currentStoryUserIndex > 0) {
+                        currentStoryUserIndex--;
+                        currentStoryData = allStoryUsers[currentStoryUserIndex].stories;
+                        storyIndex = currentStoryData.length - 1;
+                        showStory();
+                        return;
+                    }
+                    storyIndex = 0; // Stick to start
+                }
+
+                const story = currentStoryData[storyIndex];
+                const img = document.getElementById('storyImage');
+                const bar = document.getElementById('storyBar');
+                const debugDiv = document.getElementById('storyDebug');
+
+                // Update content
+                let safeUrl = story.image_url;
+                try {
+                    // Only encode if it looks like a path with spaces, not execution
+                    safeUrl = encodeURI(story.image_url).replace(/#/g, '%23');
+                } catch (e) {
+                    console.error("URL encoding error", e);
+                }
+
+                // Show debug info
+                if (debugDiv) {
+                    debugDiv.innerText = "Loading: " + safeUrl + "\nType: " + story.media_type;
+                    debugDiv.style.display = 'block';
+                }
+
+                if (story.media_type === 'video') {
+                    img.style.display = 'none'; // Hide img if it exists
+                    // Check if video element already exists (from previous story)
+                    let vid = document.getElementById('storyVideo');
+                    if (!vid) {
+                        vid = document.createElement('video');
+                        vid.id = 'storyVideo';
+                        vid.style.maxWidth = '90vw';
+                        vid.style.maxHeight = '80vh';
+                        vid.autoplay = true;
+                        vid.controls = false;
+                        vid.style.pointerEvents = 'auto';
+                        vid.onclick = () => window.location.reload();
+                        img.parentNode.insertBefore(vid, img);
+                    }
+                    vid.style.display = 'block';
+                    vid.src = safeUrl;
+                    vid.onerror = function () {
+                        if (debugDiv) debugDiv.innerText += "\nVIDEO ERROR!";
+                        alert('Video format xatosi');
+                    };
+                } else {
+                    // Hide video if exists
+                    const vid = document.getElementById('storyVideo');
+                    if (vid) vid.style.display = 'none';
+
+                    img.style.display = 'block';
+
+                    // Fallback logic
+                    img.onerror = function () {
+                        this.onerror = null;
+                        if (debugDiv) debugDiv.innerText += "\nIMAGE ERROR -> Falling back to local pattern";
+                        this.src = 'images/naqsh.svg';
+                        this.title = 'Rasm topilmadi';
+                        this.style.border = '2px solid red';
+                    };
+
+                    img.src = safeUrl;
+                }
+
+                // Progress Bar Animation
+                bar.style.transition = 'none';
+                bar.style.width = '0%';
+                void bar.offsetWidth; // Force reflow
+                bar.style.transition = 'width 30s linear';
+                bar.style.width = '100%';
+
+                clearTimeout(storyTimer);
+                storyTimer = setTimeout(() => {
+                    nextStory();
+                }, 30000);
+            }
+
+            function nextStory() {
+                storyIndex++;
+                showStory();
+            }
+
+            function prevStory() {
+                storyIndex--;
+                showStory();
+            }
+
+            // Click navigation
+            document.getElementById('storyViewer').addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') return; // Close btn
+
+                const width = window.innerWidth;
+                const clickX = e.clientX;
+
+                if (clickX < width / 3) {
+                    prevStory();
+                } else {
+                    nextStory();
+                }
+            });
+
+            window.closeStoryViewer = function () {
+                const el = document.getElementById('storyViewer');
+                el.classList.remove('active');
+                el.style.display = 'none'; // Force hide
+
+                // Stop video
+                const vid = document.getElementById('storyVideo');
+                if (vid) vid.pause();
+
+                // Clear state
+                clearTimeout(storyTimer);
+                storyTimer = null;
+                currentStoryData = null;
+                storyIndex = 0;
+
+                // Restore display property after transition (optional, but good for active class to work next time)
+                setTimeout(() => {
+                    el.style.display = '';
+                }, 300);
+            }
+
+            // Initialize
+            if (checkAuth()) {
+                loadFeed();
+                loadUsers();
+                loadStories();
+            }
+            // Preloader
+            window.addEventListener('load', () => {
+                const preloader = document.getElementById('preloader');
+                if (preloader) {
+                    preloader.style.opacity = '0';
+                    setTimeout(() => {
+                        preloader.style.display = 'none';
+                    }, 500);
+                }
+            });
+        </script>
+</body>
+
+</html>

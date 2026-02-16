@@ -1,0 +1,9 @@
+node_modules/
+uploads/
+milliy_gilam.db
+*.log
+*.zip
+*.ps1
+*.bat
+.env
+.DS_Store
