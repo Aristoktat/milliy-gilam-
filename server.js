@@ -175,47 +175,13 @@ const JWT_SECRET = 'milliy-gilam-secret-key';
 const ADMIN_PASSWORD = 'admin'; // Oddiy parol (o'zgartirishingiz mumkin)
 
 
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-
-// Cloudinary Configuration
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-// Multer Storage Setup (Switch between Local and Cloudinary based on Env)
-let storage;
-
-if (process.env.CLOUDINARY_CLOUD_NAME) {
-    // Use Cloudinary Storage
-    storage = new CloudinaryStorage({
-        cloudinary: cloudinary,
-        params: {
-            folder: 'milliy_gilam_uploads',
-            allowed_formats: ['jpg', 'png', 'jpeg', 'gif', 'mp4', 'mov'],
-            resource_type: 'auto'
-        }
-    });
-    console.log("Using Cloudinary Storage for uploads.");
-} else {
-    // Use Local Disk Storage (Fallback)
-    const uploadsDir = path.join(__dirname, 'uploads');
-    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
-    storage = multer.diskStorage({
-        destination: (req, file, cb) => cb(null, uploadsDir),
-        filename: (req, file, cb) => cb(null, `${Date.now()} - ${file.originalname}`)
-    });
-    console.log("Using Local Disk Storage for uploads (Warning: Files may be deleted on Render restart).");
-}
+// Multer setup (Memory Storage for Base64 conversion)
+const storage = multer.memoryStorage();
 
 const upload = multer({
     storage,
-    limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for Base64 (to prevent DB bloat)
     fileFilter: (req, file, cb) => {
-        // Simple check for image/video types
         if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
             cb(null, true);
         } else {
@@ -463,7 +429,11 @@ app.post('/api/upload', verifyToken, upload.single('file'), (req, res) => {
     const fileUrl = req.file.path || `/uploads/${req.file.filename}`;
     const mediaType = req.file.mimetype.startsWith('video') ? 'video' : 'image';
 
-    res.json({ message: 'Yuklandi', url: fileUrl, media_type: mediaType });
+    // Convert buffer to Base64
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+
+    res.json({ message: 'Yuklandi', url: dataURI, media_type: mediaType });
 });
 
 app.post('/api/posts', verifyToken, async (req, res) => {
@@ -611,7 +581,8 @@ app.post('/api/messages', verifyToken, upload.single('image'), async (req, res) 
     let image_url = null;
 
     if (req.file) {
-        image_url = req.file.path || `/uploads/${req.file.filename}`;
+        const b64 = Buffer.from(req.file.buffer).toString('base64');
+        image_url = "data:" + req.file.mimetype + ";base64," + b64;
     }
 
     if (!receiver_id || (!text && !image_url)) return res.status(400).json({ error: 'Xabar bo\'sh bo\'lolmaydi' });
@@ -681,7 +652,8 @@ app.get('/api/stories', verifyToken, async (req, res) => {
 app.post('/api/stories', verifyToken, upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'Fayl tanlanmadi' });
 
-    const image_url = req.file.path || `/uploads/${req.file.filename}`;
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const image_url = "data:" + req.file.mimetype + ";base64," + b64;
     const media_type = req.file.mimetype.startsWith('video') ? 'video' : 'image';
 
     try {
