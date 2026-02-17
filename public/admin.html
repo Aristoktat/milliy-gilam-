@@ -265,42 +265,60 @@
         }
 
         async function loadDashboard() {
-            const stats = await api('/api/admin/stats');
-            document.getElementById('userCount').innerText = stats.users;
-            document.getElementById('postCount').innerText = stats.posts;
-            document.getElementById('msgCount').innerText = stats.messages;
+            try {
+                const stats = await api('/api/admin/stats');
+                if (stats.error) throw new Error(stats.error);
+                document.getElementById('userCount').innerText = stats.users || 0;
+                document.getElementById('postCount').innerText = stats.posts || 0;
+                document.getElementById('msgCount').innerText = stats.messages || 0;
+            } catch (e) {
+                console.error(e);
+                alert("Statistikani yuklashda xato: " + e.message);
+            }
         }
 
         async function loadUsers() {
-            const users = await api('/api/admin/users');
-            const tbody = document.querySelector('#usersTable tbody');
-            tbody.innerHTML = users.map(u => `
-                <tr>
-                    <td>${u.id}</td>
-                    <td>${u.username}</td>
-                    <td>${u.email}</td>
-                    <td><button class="btn-danger" onclick="deleteUser(${u.id})">O'chirish</button></td>
-                </tr>
-            `).join('');
+            try {
+                const users = await api('/api/admin/users');
+                if (users.error) throw new Error(users.error);
+                const tbody = document.querySelector('#usersTable tbody');
+                tbody.innerHTML = users.map(u => `
+                    <tr>
+                        <td>${u.id}</td>
+                        <td>${u.username}</td>
+                        <td>${u.email}</td>
+                        <td><button class="btn-danger" onclick="deleteUser(${u.id})">O'chirish</button></td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error(e);
+                // alert("Foydalanuvchilarni yuklashda xato");
+            }
         }
 
         async function deleteUser(id) {
             if (!confirm('Aniqmi?')) return;
             await api('/api/admin/users/' + id, 'DELETE');
             loadUsers();
+            loadDashboard(); // Refresh stats
         }
 
         async function loadPosts() {
-            const posts = await api('/api/admin/posts');
-            const grid = document.getElementById('postsGrid');
-            grid.innerHTML = posts.map(p => `
-                <div class="card" style="padding:10px;">
-                    <img src="${p.image_url}" style="width:100%; height:150px; object-fit:cover; border-radius:10px;">
-                    <p><b>${p.username}</b></p>
-                    <p style="font-size:12px;">${p.caption || ''}</p>
-                    <button class="btn-danger" style="width:100%" onclick="deletePost(${p.id})">O'chirish</button>
-                </div>
-            `).join('');
+            try {
+                const posts = await api('/api/admin/posts');
+                if (posts.error) throw new Error(posts.error);
+                const grid = document.getElementById('postsGrid');
+                grid.innerHTML = posts.map(p => `
+                    <div class="card" style="padding:10px;">
+                        <img src="${p.image_url}" style="width:100%; height:150px; object-fit:cover; border-radius:10px;">
+                        <p><b>${p.username}</b></p>
+                        <p style="font-size:12px;">${p.caption || ''}</p>
+                        <button class="btn-danger" style="width:100%" onclick="deletePost(${p.id})">O'chirish</button>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         async function deletePost(id) {
